@@ -26,7 +26,7 @@ public class Player : MonoBehaviour {
 			bool hitOnTop = false;
 			bool hitOnBottom = false;
 
-			print (vel);
+			//print (vel);
 			if((vel.x < 0.0001f && vel.x > -0.0001f) || (vel.y < 0.0001f && vel.y > -0.0001f)){ // Is non-diag vector, no raycast needed
 				if(vel.x > 0f){ // Hit left side 
 					hitOnLeft = true;
@@ -39,7 +39,7 @@ public class Player : MonoBehaviour {
 				} else {
 					print ("Player is not moving, should not hit boundary");
 				}
-				print (desiredPos);
+				//print (desiredPos);
 			} else { // travel is diagonal
 
 
@@ -97,9 +97,9 @@ public class Player : MonoBehaviour {
 					//Cast ray
 					Ray ray = new Ray(this.transform.position, dir);
 					RaycastHit hit;
-					print(other.Raycast(ray, out hit, 20.0f));
+					other.Raycast(ray, out hit, 20.0f);
 					Vector3 norm = hit.normal;
-					print (norm);
+					//print (norm);
 					if(norm.x > 0){
 						//print ("right side");
 						hitOnRight = true;
