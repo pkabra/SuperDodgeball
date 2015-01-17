@@ -1,15 +1,43 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class Player : MonoBehaviour {
+public enum PlayerState{stand, walk, run, catching, passing};
+public enum PlayerFacing{northEast, east, southEast, southWest, west, northWest};
 
+public class Player : MonoBehaviour {
+	public float catchingTime = 0.4f;
 	public Vector3 pos0 = Vector3.zero;
 	public Vector3 vel = Vector3.zero;
+	public PlayerState state = PlayerState.stand;
+	public PlayerFacing facing = PlayerFacing.east;
 	private bool xLock = false;
 	private bool yLock = false;
+	
 	// Use this for initialization
-	void Awake () {
-		
+	void Start () {
+		if (CompareTag("Team1")) {
+			GameEngine.team1.Add(this);
+		} else {
+			GameEngine.team2.Add(this);
+		}
+	}
+	
+	IEnumerator AttemptCatch(){
+		float endTime = Time.time + catchingTime;
+		state = PlayerState.catching;
+		while(Time.time < endTime){
+			yield return null;
+		}
+		if(state == PlayerState.catching){
+			state = PlayerState.stand;
+		}
+	}
+	
+	IEnumerator AttemptCatchAtTime(float catchTime){
+		while(Time.time < catchTime){
+			yield return null;
+		}
+		AttemptCatch ();
 	}
 	
 	void OnTriggerEnter(Collider other){
@@ -25,7 +53,7 @@ public class Player : MonoBehaviour {
 			bool hitOnRight = false;
 			bool hitOnTop = false;
 			bool hitOnBottom = false;
-
+			
 			//print (vel);
 			if((vel.x < 0.0001f && vel.x > -0.0001f) || (vel.y < 0.0001f && vel.y > -0.0001f)){ // Is non-diag vector, no raycast needed
 				if(vel.x > 0f){ // Hit left side 
@@ -41,8 +69,8 @@ public class Player : MonoBehaviour {
 				}
 				//print (desiredPos);
 			} else { // travel is diagonal
-
-
+				
+				
 				//Determine correct origin and direction for ray
 				Vector3 dir = vel.normalized;
 				Vector3 origin = pos0;
@@ -92,7 +120,7 @@ public class Player : MonoBehaviour {
 				} else {
 					print ("Error finding Raycast origin in Player.OnTriggerEnter()");
 				}
-			
+				
 				if(rayNeeded){
 					//Cast ray
 					Ray ray = new Ray(this.transform.position, dir);
@@ -117,7 +145,7 @@ public class Player : MonoBehaviour {
 					}
 				}
 			}
-
+			
 			if(hitOnLeft){ // Hit left side 
 				xLock = true;
 				desiredPos.x = other.transform.position.x - (boundaryHalfWidth + thisHalfWidth + 0.001f);
@@ -131,16 +159,13 @@ public class Player : MonoBehaviour {
 				yLock = true;
 				desiredPos.y = other.transform.position.y + (boundaryHalfHeight + thisHalfHeight + 0.001f);
 			}
-
+			
 			this.transform.position = desiredPos;
 		}
 	}
 	
 	// Update is called once per frame
-	void FixedUpdate () {
-		float h = Input.GetAxisRaw ("Horizontal");
-		float v = Mathf.Round (Input.GetAxisRaw ("Vertical"));
-
+	public void Movement (float h, float v) {
 		// Protection from overriding collision resolution
 		if(xLock){
 			xLock = false;
@@ -153,7 +178,7 @@ public class Player : MonoBehaviour {
 		
 		//Store previous position
 		pos0 = this.transform.position;
-
+		
 		// Movement
 		Vector3 pos1 = Vector3.zero;
 		vel.x = h * 0.1f;
