@@ -2,8 +2,8 @@
 using System.Collections;
 
 public enum KineticStates{none, stand, walk, run, crouch, jump ,runjump, fall, stun};
-public enum ActionStates{none, throwing, catching, passing};
-public enum PlayerFacing{northEast, east, southEast, southWest, west, northWest, north, south};
+public enum ActionStates{none, throwing, catching, passing, holding};
+public enum PlayerFacing{northEast, east, southEast, southWest, west, northWest};
 
 public class ActionState {
 	public ActionStates state = ActionStates.none;
@@ -16,7 +16,9 @@ public class KineticState {
 }
 
 public class Player : MonoBehaviour {
-	public float catchingTime = 0.4f;
+	public float catchingTime = 0.8f;
+	public float catchAttemptBuffer = 0.1f;
+	public float tryCatchTime = 0f;
 	public Vector3 pos0 = Vector3.zero;
 	public Vector3 vel = Vector3.zero;
 	public KineticState kState = new KineticState();
@@ -40,17 +42,27 @@ public class Player : MonoBehaviour {
 		while(Time.time < endTime){
 			yield return null;
 		}
+		print ("hands down");
 		if(aState.state == ActionStates.catching){
 			kState.state = KineticStates.stand;
 			aState.state = ActionStates.none;
 		}
 	}
 	
-	IEnumerator AttemptCatchAtTime(float catchTime){
-		while(Time.time < catchTime){
+	IEnumerator AttemptCatchAtTimeCR(){
+		tryCatchTime -= catchAttemptBuffer;
+		while(Time.time < tryCatchTime ){
+			//print()
 			yield return null;
 		}
-		AttemptCatch ();
+		print ("hands up");
+		StartCoroutine( AttemptCatch() );
+	}
+	
+	public void AttemptCatchAtTime(float catchTime){
+		tryCatchTime = catchTime;
+		print (tryCatchTime);
+		StartCoroutine(AttemptCatchAtTimeCR());
 	}
 	
 	void OnTriggerEnter(Collider other){
@@ -177,7 +189,7 @@ public class Player : MonoBehaviour {
 		}
 	}
 	
-	// Update is called once per frame
+	// Handle Player Movement
 	public void Movement (float h, float v) {
 		// Protection from overriding collision resolution
 		if(xLock){
@@ -188,15 +200,58 @@ public class Player : MonoBehaviour {
 			yLock = false;
 			v = 0f;
 		}
+
+		if (Time.time - kState.startTime < 0.5f || Time.time - aState.startTime < 0.5f) return;
 		
 		//Store previous position
 		pos0 = this.transform.position;
 		
 		// Movement
 		Vector3 pos1 = Vector3.zero;
-		vel.x = h * 0.1f;
-		vel.y = v * 0.1f;
+		if (kState.state == KineticStates.run) {
+			vel.x = h * 0.3f;
+			vel.y = v * 0.05f;
+		} else {
+			vel.x = h * 0.1f;
+			vel.y = v * 0.1f;
+		}
 		pos1 = pos0 + vel;
-		this.transform.position = pos1;
+
+		Quaternion rot = transform.rotation;
+		if (h < 0f) {
+			if (v < 0f) {
+				facing = PlayerFacing.southWest;
+			} else if (v > 0f) {
+				facing = PlayerFacing.northWest;
+			} else {
+				facing = PlayerFacing.west;
+			}
+			rot.y = 180f;
+		} else if (h > 0f) {
+			if (v < 0f) {
+				facing = PlayerFacing.southEast;
+			} else if (v > 0f) {
+				facing = PlayerFacing.northEast;
+			} else {
+				facing = PlayerFacing.east;			
+			}
+			rot.y = 0f;
+		}
+
+		transform.position = pos1;
+		transform.rotation = rot;
+	}
+
+	// Handle Player Picking up Ball
+	public void PickupBall() {
+		float delta = Vector3.Distance(transform.position, GameEngine.ball.transform.position);
+
+		if (delta < 1f) {
+			GameEngine.ball.StateHeld (this);
+		}
+
+		kState.state = KineticStates.walk;
+		kState.startTime = Time.time;
+
 	}
 }
