@@ -15,7 +15,7 @@ public class Ball : MonoBehaviour {
 	private GameObject passTarg = null;
 	// Use this for initialization
 	void Start () {
-		
+		GameEngine.ball = this;
 	}
 	
 	// Once per frame
