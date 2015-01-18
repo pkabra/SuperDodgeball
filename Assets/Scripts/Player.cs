@@ -1,14 +1,26 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public enum PlayerState{stand, walk, run, catching, passing};
-public enum PlayerFacing{northEast, east, southEast, southWest, west, northWest};
+public enum KineticStates{none, stand, walk, run, crouch, jump ,runjump, fall, stun};
+public enum ActionStates{none, throwing, catching, passing};
+public enum PlayerFacing{northEast, east, southEast, southWest, west, northWest, north, south};
+
+public class ActionState {
+	public ActionStates state = ActionStates.none;
+	public float startTime = 0f;
+}
+
+public class KineticState {
+	public KineticStates state = KineticStates.none;
+	public float startTime = 0f;
+}
 
 public class Player : MonoBehaviour {
 	public float catchingTime = 0.4f;
 	public Vector3 pos0 = Vector3.zero;
 	public Vector3 vel = Vector3.zero;
-	public PlayerState state = PlayerState.stand;
+	public KineticState kState = new KineticState();
+	public ActionState aState = new ActionState();
 	public PlayerFacing facing = PlayerFacing.east;
 	private bool xLock = false;
 	private bool yLock = false;
@@ -24,12 +36,13 @@ public class Player : MonoBehaviour {
 	
 	IEnumerator AttemptCatch(){
 		float endTime = Time.time + catchingTime;
-		state = PlayerState.catching;
+		aState.state = ActionStates.catching;
 		while(Time.time < endTime){
 			yield return null;
 		}
-		if(state == PlayerState.catching){
-			state = PlayerState.stand;
+		if(aState.state == ActionStates.catching){
+			kState.state = KineticStates.stand;
+			aState.state = ActionStates.none;
 		}
 	}
 	
