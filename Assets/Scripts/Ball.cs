@@ -141,7 +141,11 @@ public class Ball : MonoBehaviour {
 		Vector3 dir = targPos - this.transform.position;
 		dir.z = 0;
 		vel = dir.normalized * velMult;
+		this.collider.enabled = true;
 		state = BallState.thrown;
+
+		holder.StateThrowing();
+		holder = null;
 	}
 
 }

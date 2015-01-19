@@ -35,6 +35,11 @@ public class Player : MonoBehaviour {
 			GameEngine.team2.Add(this);
 		}
 	}
+
+	public void StateThrowing(){
+		// Player just threw the ball
+		aState.state = ActionStates.throwing;
+	}
 	
 	IEnumerator AttemptCatch(){
 		float endTime = Time.time + catchingTime;
