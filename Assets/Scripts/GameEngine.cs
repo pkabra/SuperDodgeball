@@ -70,6 +70,14 @@ public class GameEngine : MonoBehaviour {
 			player2.player.kState.state = KineticStates.walk;
 		}
 
+		//TESTING STUFF
+		if(Input.GetMouseButtonDown(0)){
+			Vector3 targPos = new Vector3(Input.mousePosition.x, Input.mousePosition.y);
+			targPos.z = 0f;
+			targPos = Camera.main.ScreenToWorldPoint(targPos);
+			ball.ThrowToPos(targPos, .8f);
+		}
+
 	}
 	
 	// Update is called once per frame

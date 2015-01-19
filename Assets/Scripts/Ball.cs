@@ -5,7 +5,8 @@ public enum BallState { rest, free, held, pass, thrown };
 
 public class Ball : MonoBehaviour {
 	public float grav = -10.0f;
-	public float passMult = 0.08f;
+	public float passSpeedMult = 0.08f;
+	public float throwSpeedMult = 0.08f;
 	public float catchRadius = 0.5f;
 	public Vector3 vel = Vector3.zero;
 	public Vector3 accel = Vector3.zero;
@@ -24,20 +25,26 @@ public class Ball : MonoBehaviour {
 			return;
 		}
 
-		// get Player component if one exists
-		Player pOther = other.GetComponent<Player>();
-		if(pOther.GetInstanceID() == catcher.GetInstanceID()){
-			StateHeld(catcher);
-		}
+		if(other.gameObject.layer == 9){ // If other is on the 'Players' layer
+			// get Player component if one exists
+			Player pOther = other.GetComponent<Player>();
+			if(pOther.GetInstanceID() == catcher.GetInstanceID()){
+				StateHeld(catcher);
+			}
 
-		foreach(Player p in GameEngine.team1) {
-			if (pOther.GetInstanceID() == p.GetInstanceID()) {
-				if (p.aState.state == ActionStates.catching) {
-					// Caught
-				} else {
+			foreach(Player p in GameEngine.team1) {
+				if (pOther.GetInstanceID() == p.GetInstanceID()) {
+					if (p.aState.state == ActionStates.catching) {
+						// Caught
+					} else {
 
+					}
 				}
 			}
+		}else if(other.gameObject.layer == 11){ // If other is on the 'OutfieldBoundary' layer
+			//TEMP
+			vel = Vector3.zero;
+			state = BallState.free;
 		}
 	}
 	
@@ -73,18 +80,16 @@ public class Ball : MonoBehaviour {
 		vel = Vector3.zero;
 		this.collider.enabled = false;
 	}
-	
-	void Update(){
-		if(state == BallState.pass){
-			this.transform.position += vel * passMult;
-		} else if(state == BallState.rest){
-			
-		}
-	}
-	
+		
 	// Once per frame
 	void FixedUpdate () {
-		
+		if(state == BallState.pass){
+			this.transform.position += vel * passSpeedMult * Time.fixedTime;
+		} else if(state == BallState.rest){
+			
+		} else if(state == BallState.thrown){
+			this.transform.position += vel * throwSpeedMult * Time.fixedTime;
+		}
 		
 	}
 	
@@ -112,6 +117,12 @@ public class Ball : MonoBehaviour {
 //		float timeToTarg = distToTarg / ((vel *  passMult).magnitude * 100f);
 //		print (timeToTarg);
 //		target.AttemptCatchAtTime(Time.time + timeToTarg );
+	}
+
+	public void ThrowToPos(Vector3 targPos, float velMult){
+		targPos.z = 0;
+		vel = targPos.normalized * velMult;
+		state = BallState.thrown;
 	}
 
 }
