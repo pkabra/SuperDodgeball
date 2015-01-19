@@ -149,8 +149,8 @@ public class GameEngine : MonoBehaviour {
 		// Controls
 		float h2 = Input.GetAxisRaw("Horizontal2");
 		float y2 = Input.GetAxisRaw("Vertical2");
-		bool b2 = Input.GetKey (KeyCode.Slash);
-		bool a2 = Input.GetKey (KeyCode.Period);
+		bool b2 = Input.GetKeyDown (KeyCode.Slash);
+		bool a2 = Input.GetKeyDown (KeyCode.Period);
 		if (b2 && a2) {
 			// Jump
 		} else if (a2) {
