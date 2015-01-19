@@ -72,8 +72,8 @@ public class GameEngine : MonoBehaviour {
 
 		//TESTING STUFF
 		if(Input.GetMouseButtonDown(0)){
-			Vector3 targPos = new Vector3(Input.mousePosition.x, Input.mousePosition.y);
-			targPos.z = 0f;
+			Vector3 targPos = Input.mousePosition;
+			targPos.z = -1.0f;
 			targPos = Camera.main.ScreenToWorldPoint(targPos);
 			ball.ThrowToPos(targPos, .8f);
 		}
