@@ -23,6 +23,9 @@ public class Ball : MonoBehaviour {
 	
 	private float totalTrajDist = 0.0f; // Total distance from origin to intended target
 	private Vector3 passOrigin = Vector3.zero;
+	private float heightVel = 0.0f; // velocity along the height axis, used for faking gravity
+	private float gravity = -0.07f;
+	private float bounciness = 0.5f;
 	
 	
 	//private GameObject passTarg = null;
@@ -39,16 +42,41 @@ public class Ball : MonoBehaviour {
 		if(state == BallState.pass){
 			PassTrajectoryLogic();
 			this.transform.position += vel * passSpeedMult * Time.fixedDeltaTime;
-		} else if(state == BallState.rest){
-			
 		} else if(state == BallState.thrown){
 			this.transform.position += vel * throwSpeedMult * Time.fixedDeltaTime;
+		} else if(state == BallState.free){
+			FreeBallinLogic();
+			if(vel.magnitude < 0.02f){
+				vel = Vector3.zero;
+			}
+		} else if(state == BallState.rest){
+			
 		}
 		
 		// Block for things that should always happen
 		Vector3 heightOffset = new Vector3( 0, height * YCompOfZ, 0 );
 		spriteHolderTrans.localPosition = heightOffset;
 		
+	}
+
+	void BounceLogic(){
+
+	}
+
+	void FreeBallinLogic(){
+		// Put ball at rest if it is moving super slow
+		if(height < 0.01f && (heightVel < 0.01f && heightVel > -0.01f)){
+			state = BallState.rest;
+			height = 0f;
+			heightVel = 0f;
+		} else {
+			heightVel += gravity;
+			height += heightVel;
+			if(height < 0f){
+				height = 0f;
+				heightVel = -heightVel * bounciness;
+			}
+		}
 	}
 	
 	void PassTrajectoryLogic(){
