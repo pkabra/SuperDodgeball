@@ -27,7 +27,7 @@ public class Ball : MonoBehaviour {
 	private float totalTrajDist = 0.0f; // Total distance from origin to intended target
 	private Vector3 passOrigin = Vector3.zero;
 	private float heightVel = 0.0f; // velocity along the height axis, used for faking gravity
-	private float gravity = -0.045f;
+	private float gravity = -0.9f;
 	private float bounciness = 0.85f;
 	private Vector3 prevPos = Vector3.zero;
 	
@@ -52,9 +52,6 @@ public class Ball : MonoBehaviour {
 			this.transform.position += vel * throwSpeedMult * Time.fixedDeltaTime;
 		} else if(state == BallState.free){
 			FreeBallinLogic();
-			if(vel.magnitude < 0.05f){
-				vel = Vector3.zero;
-			}
 			this.transform.position += vel * Time.fixedDeltaTime;
 		} else if(state == BallState.rest){
 			
@@ -143,8 +140,6 @@ public class Ball : MonoBehaviour {
 		holder.aState.state = ActionStates.holding;
 		GameEngine.ChangeControl(holder.tag);
 		
-		Vector3 pos = new Vector3(0.77f, 0, 0); // Position of ball relative to holder
-		
 		//		if (holder.facing == PlayerFacing.east) {
 		//			pos.x += 0.7f;
 		//		} else if (holder.facing == PlayerFacing.west) {
@@ -153,6 +148,7 @@ public class Ball : MonoBehaviour {
 		//		this.transform.position = pos;
 		
 		//Set ball height and position for being held
+		Vector3 pos = new Vector3(0.77f, 0, 0); // Position of ball relative to holder
 		this.transform.parent = holder.transform;
 		height = 1.3f;
 		this.transform.localPosition = pos;
@@ -198,7 +194,9 @@ public class Ball : MonoBehaviour {
 		float timeToTarg = distToTarg / ((vel *  passSpeedMult).magnitude);
 		target.AttemptCatchAtTime(Time.time + timeToTarg );
 	}
-	
+
+	// Throw the ball at a target position at a velocity relative to the multiplier passed in.
+	// The ball is not affected by gravity during a throw.
 	public void ThrowToPos(Vector3 targPos, float velMult){
 		// release ball from holder and enable collider
 		this.collider.enabled = true;
@@ -215,6 +213,9 @@ public class Ball : MonoBehaviour {
 		holder = null;
 	}
 
+	// This function contains the logic for how the ball should bounce off a vertical surface.
+	// Outer boundaries and players are considered vertical surfaces. It should be possible 
+	// for the ball to strike vertical surface anytime it is in motion.
 	void VerticalSurfaceBounce(Collider other){
 		//Set up a raycast
 		Vector3 dir = (other.transform.position - this.transform.position).normalized;
@@ -230,10 +231,12 @@ public class Ball : MonoBehaviour {
 
 		// Added height for bounce off of a player
 		if(other.gameObject.GetComponent<Player>()){
-			heightVel = 0.5f;
+			heightVel = 10.0f;
 		}
 	}
-	
+
+	// This function allows the ball to fall responding to 'gravity' and bounce off the ground.
+	// The ball loses velocity with each bounce relative to the 'bounciness' variable.
 	void FreeBallinLogic(){
 		// Put ball at rest if it is moving super slow
 		if(height < 0.05f && (heightVel < 0.1f && heightVel > -0.1f)){
@@ -242,7 +245,7 @@ public class Ball : MonoBehaviour {
 			heightVel = 0f;
 		} else {
 			heightVel += gravity;
-			height += heightVel;
+			height += heightVel * Time.fixedDeltaTime;
 			if(height < 0f){
 				// Ball has hit the ground
 				height = 0f;
@@ -250,8 +253,16 @@ public class Ball : MonoBehaviour {
 				vel *= bounciness * 0.6f;
 			}
 		}
+
+		if(vel.magnitude < 0.05f){
+			vel = Vector3.zero;
+		}
 	}
-	
+
+	// The following trajectories have their heights above the ground implented as functions of distance
+	// from the origin of the pass rather than gravity and time. The trajectory function is only applied when
+	// the ball is in the 'pass' state. If the ball hits something while in 'pass' state it will transition
+	// to the 'free' state and become affected by gravity.
 	void PassTrajectoryLogic(){
 		
 		float distFromOrigin = (transform.position - passOrigin).magnitude;
@@ -261,7 +272,10 @@ public class Ball : MonoBehaviour {
 		float percentOfMax = 1f - (Mathf.Pow (distFromMidpoint,2f) / halfDistSqrd);
 		float multOffset = 5.0f;
 		float maxHeightMult = 0.06f * (halfDistSqrd + multOffset);
-		
+
+		// These are different types of trajectories. It seemed that passes from different
+		// positions resulted in different trajectories. Feel free to adjust the unnamed multiplier
+		// to get the appropriate look for your trajectory.
 		if(trajectory == Trajectory.EastWestHigh){
 			maxHeight = 12.0f * maxHeightMult;
 			height = maxHeight * percentOfMax;

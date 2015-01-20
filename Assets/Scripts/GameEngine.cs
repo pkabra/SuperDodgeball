@@ -19,6 +19,9 @@ public class GameEngine : MonoBehaviour {
 	
 	public static Ball			ball;
 
+	// These were put in the class scope so that we could change them in the Update()
+	// then apply them in FixedUpdate(). This fixes a problem I was having with the controls
+	// not responding everyframe. Perhaps these could be moved to the 'Controller' class?
 	private float h2 = 0.0f;
 	private float y2 = 0.0f;
 	private bool b2 = false;
