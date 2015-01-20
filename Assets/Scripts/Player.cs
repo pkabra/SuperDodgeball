@@ -16,14 +16,17 @@ public class KineticState {
 }
 
 public class Player : MonoBehaviour {
-	public float catchingTime = 0.8f;
-	public float catchAttemptBuffer = 0.1f;
-	public float tryCatchTime = 0f;
-	public Vector3 pos0 = Vector3.zero;
+
+	public Vector3 pos0 = Vector3.zero; // previous frame position
 	public Vector3 vel = Vector3.zero;
+	public float height = 0.0f; // height above ground plane
 	public KineticState kState = new KineticState();
 	public ActionState aState = new ActionState();
 	public PlayerFacing facing = PlayerFacing.east;
+
+	public float catchingTime = 0.8f;
+	public float catchAttemptBuffer = 0.3f;
+	public float tryCatchTime = 0f;
 	private bool xLock = false;
 	private bool yLock = false;
 	
@@ -40,35 +43,7 @@ public class Player : MonoBehaviour {
 		// Player just threw the ball
 		aState.state = ActionStates.throwing;
 	}
-	
-	IEnumerator AttemptCatch(){
-		float endTime = Time.time + catchingTime;
-		aState.state = ActionStates.catching;
-		while(Time.time < endTime){
-			yield return null;
-		}
-		print ("hands down");
-		if(aState.state == ActionStates.catching){
-			kState.state = KineticStates.stand;
-			aState.state = ActionStates.none;
-		}
-	}
-	
-	IEnumerator AttemptCatchAtTimeCR(){
-		tryCatchTime -= catchAttemptBuffer;
-		while(Time.time < tryCatchTime ){
-			//print()
-			yield return null;
-		}
-		print ("hands up");
-		StartCoroutine( AttemptCatch() );
-	}
-	
-	public void AttemptCatchAtTime(float catchTime){
-		tryCatchTime = catchTime;
-		print (tryCatchTime);
-		StartCoroutine(AttemptCatchAtTimeCR());
-	}
+
 	
 	void OnTriggerEnter(Collider other){
 		
@@ -248,15 +223,62 @@ public class Player : MonoBehaviour {
 	}
 
 	// Handle Player Picking up Ball
+	// Edited to account for height -Steve
 	public void PickupBall() {
-		float delta = Vector3.Distance(transform.position, GameEngine.ball.transform.position);
+		Ball theBall = GameEngine.ball;
+		float heightDifference = theBall.height - this.height; 
+		float delta = Vector3.Distance(transform.position, theBall.transform.position);
 
-		if (delta < 1f) {
-			GameEngine.ball.StateHeld (this);
+		if (delta < 1f && ((heightDifference <= theBall.heightHitbox) && (heightDifference >= (theBall.heightHitbox * -1f)))) {
+			theBall.StateHeld (this);
 		}
 
 		kState.state = KineticStates.walk;
 		kState.startTime = Time.time;
 
+	}
+
+	public void AttemptCatchAtTime(float catchTime){
+		tryCatchTime = catchTime;
+		print (tryCatchTime);
+		StartCoroutine(AttemptCatchAtTimeCR());
+	}
+
+	public void ThrowAt(Vector3 targetPos){
+		StateThrowing();
+		StartCoroutine(TempNoCollide(0.15f));
+	}
+
+	IEnumerator AttemptCatch(){
+		float endTime = Time.time + catchingTime;
+		print ("hands up");
+		aState.state = ActionStates.catching;
+		while(Time.time < endTime){
+			yield return null;
+		}
+		print ("hands down");
+		if(aState.state == ActionStates.catching){
+			kState.state = KineticStates.stand;
+			aState.state = ActionStates.none;
+		}
+	}
+	
+	IEnumerator AttemptCatchAtTimeCR(){
+		tryCatchTime -= catchAttemptBuffer;
+		while(Time.time < tryCatchTime ){
+			//print()
+			yield return null;
+		}
+		StartCoroutine( AttemptCatch() );
+	}
+
+
+	public IEnumerator TempNoCollide(float secs){
+		float endTime = Time.time + secs;
+		this.collider.enabled = false;
+		while(Time.time < endTime){
+			yield return null;
+		}
+		this.collider.enabled = true;
 	}
 }

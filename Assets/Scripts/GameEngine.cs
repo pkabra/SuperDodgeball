@@ -18,6 +18,11 @@ public class GameEngine : MonoBehaviour {
 	public static Controller	player2 = new Controller();
 	
 	public static Ball			ball;
+
+	private float h2 = 0.0f;
+	private float y2 = 0.0f;
+	private bool b2 = false;
+	private bool a2 = false;
 	
 	// Use this for initialization
 	void Awake () {
@@ -76,6 +81,16 @@ public class GameEngine : MonoBehaviour {
 			targPos.z = -1.0f;
 			targPos = Camera.main.ScreenToWorldPoint(targPos);
 			ball.ThrowToPos(targPos, .8f);
+		}
+
+		//Controls
+		h2 = Input.GetAxisRaw("Horizontal2");
+		y2 = Input.GetAxisRaw("Vertical2");
+		if( Input.GetKeyDown (KeyCode.Slash) ){
+			b2 = true;
+		}
+		if( Input.GetKeyDown (KeyCode.Period) ){
+			a2 = true;
 		}
 
 	}
@@ -147,10 +162,11 @@ public class GameEngine : MonoBehaviour {
 		}
 		
 		// Controls
-		float h2 = Input.GetAxisRaw("Horizontal2");
-		float y2 = Input.GetAxisRaw("Vertical2");
-		bool b2 = Input.GetKeyDown (KeyCode.Slash);
-		bool a2 = Input.GetKeyDown (KeyCode.Period);
+		// Moved Update()
+//		float h2 = Input.GetAxisRaw("Horizontal2");
+//		float y2 = Input.GetAxisRaw("Vertical2");
+//		bool b2 = Input.GetKeyDown (KeyCode.Slash);
+//		bool a2 = Input.GetKeyDown (KeyCode.Period);
 		if (b2 && a2) {
 			// Jump
 		} else if (a2) {
@@ -176,13 +192,19 @@ public class GameEngine : MonoBehaviour {
 			// Pickup or throw
 			if (player2.player.aState.state == ActionStates.holding) {
 				// Throw
+				// Aim Needed
+				player2.player.ThrowAt(Vector3.zero);
+				ball.ThrowToPos(Vector3.zero, 1.0f);
 			} else {
 				// Pickup
-				player2.player.PickupBall();
+				player2.player.AttemptCatchAtTime(Time.time);
 			}
 		} else {
 			player2.player.Movement(h2, y2);
 		}
+
+		a2 = false;
+		b2 = false;
 	}
 
 	public static void ChangeControl(string tag) {

@@ -6,26 +6,29 @@ public enum Trajectory { none, low, mid, EastWestHigh, NorthSouthHigh };
 
 public class Ball : MonoBehaviour {
 	public Vector3 vel = Vector3.zero;
+	public float height = 0.0f;
+	public BallState state = BallState.rest;
+	public Trajectory trajectory = Trajectory.none;
+
+	public Player holder = null;
+	public Player catcher = null;
+	public Transform spriteHolderTrans = null;
+
+	// All variables below this point might be able to be moved inside functions,
+	// check on a case by case basis before doing so.
 	public float passSpeedMult = 3f;
 	public float throwSpeedMult = 5f;
 	public float catchRadius = 0.5f;
 	public float YCompOfZ = 0.5f; // The Y component of the Height axis, NOT the worldspace Z
-	public float height = 0.0f;
 	public float trajMult = 1.0f;
 	public float maxHeight = 0.0f; // Max height of a trajectory
-	
-	public BallState state = BallState.rest;
-	public Trajectory trajectory = Trajectory.none;
-	
-	public Player holder = null;
-	public Player catcher = null;
-	public Transform spriteHolderTrans = null;
+	public float heightHitbox = 1.6f; // The hitbox of the ball extends this amount up and down on height axis
 	
 	private float totalTrajDist = 0.0f; // Total distance from origin to intended target
 	private Vector3 passOrigin = Vector3.zero;
 	private float heightVel = 0.0f; // velocity along the height axis, used for faking gravity
-	private float gravity = -0.07f;
-	private float bounciness = 0.5f;
+	private float gravity = -0.045f;
+	private float bounciness = 0.85f;
 	private Vector3 prevPos = Vector3.zero;
 	
 	
@@ -49,7 +52,7 @@ public class Ball : MonoBehaviour {
 			this.transform.position += vel * throwSpeedMult * Time.fixedDeltaTime;
 		} else if(state == BallState.free){
 			FreeBallinLogic();
-			if(vel.magnitude < 0.02f){
+			if(vel.magnitude < 0.05f){
 				vel = Vector3.zero;
 			}
 			this.transform.position += vel * Time.fixedDeltaTime;
@@ -75,25 +78,42 @@ public class Ball : MonoBehaviour {
 
 		if(state == BallState.pass){
 			if(othersLayer == 9){ // If other is on the 'Players' layer
-				// get Player component if one exists
-				if(pOther.GetInstanceID() == catcher.GetInstanceID()){
-					StateHeld(catcher);
+				float heightDifference = height - pOther.height; // 
+				if((heightDifference > heightHitbox) || (heightDifference < (heightHitbox * -1f)))
+				{
+					return; // Do nothing because the ball went over or under the player
+				}else if(pOther.aState.state == ActionStates.catching){
+					StateHeld(pOther);
+				} else {
+					VerticalSurfaceBounce(other);
 				}
 				
-				foreach(Player p in GameEngine.team1) {
-					if (pOther.GetInstanceID() == p.GetInstanceID()) {
-						if (p.aState.state == ActionStates.catching) {
-							// Caught
-						} else {
-							
-						}
-					}
-				}
+//				foreach(Player p in GameEngine.team1) {
+//					if (pOther.GetInstanceID() == p.GetInstanceID()) {
+//						if (p.aState.state == ActionStates.catching) {
+//							// Caught
+//						} else {
+//							
+//						}
+//					}
+//				}
 			} else if(othersLayer == 11){
 				VerticalSurfaceBounce(other);
 			}
 		} else if (state == BallState.thrown){
-			VerticalSurfaceBounce(other);
+			if(pOther){
+				float heightDifference = height - pOther.height; // 
+				if((heightDifference > heightHitbox) || (heightDifference < (heightHitbox * -1f)))
+				{
+					return; // Do nothing because the ball went over or under the player
+				} else if(pOther.aState.state == ActionStates.catching){
+					StateHeld(pOther);
+				} else {
+					VerticalSurfaceBounce(other);
+				}
+			} else {
+				VerticalSurfaceBounce(other);
+			}
 		}
 //		else if(other.gameObject.layer == 11){ // If other is on the 'OutfieldBoundary' layer
 //			//TEMP
@@ -150,31 +170,33 @@ public class Ball : MonoBehaviour {
 		//Vector3 scale = new Vector3(1f,1f,1f);
 		//transform.localScale = scale;
 		
-		catcher = target;
+		//catcher = target;
 		
 		//Create a normalized vector to the target with 0 z component
-		Vector3 toTarg = target.transform.position - this.transform.position;
-		toTarg.z = 0f;
-		vel = toTarg.normalized;
+		Vector3 vecToTarg = target.transform.position - transform.position;
+		vecToTarg.z = 0f;
+		vel = vecToTarg.normalized;
 		state = BallState.pass;
 		
 		//Set trajectory calculation info
-		trajectory = Trajectory.NorthSouthHigh;
-		Vector3 originTemp = this.holder.transform.position;
-		passOrigin = originTemp;
-		totalTrajDist = toTarg.magnitude;
-		
+		trajectory = Trajectory.NorthSouthHigh; //TODO THIS NEEDS TO BE DYNAMICALLY SET BASED ON PASS TARGET 
+		Vector3 originTemp = this.transform.position;
+		passOrigin = originTemp - vel * 0.5f; // Set Origin to 'multiplier' units behind passer
+
+		totalTrajDist = Mathf.Max(vecToTarg.magnitude + 0.5f, 0.5f);
+		//totalTrajDist = toTarg.magnitude;
+
 		//Change holder info 
 		holder.aState.state = ActionStates.passing;
 		holder.aState.startTime = Time.time;
+		StartCoroutine(holder.TempNoCollide(0.2f)); // Prevent holder from hitting self
 		holder = null;
 		
 		
 		//determine time for ball to get to target
-		//		float distToTarg = ((Vector2)this.transform.position - (Vector2)target.transform.position).magnitude;
-		//		float timeToTarg = distToTarg / ((vel *  passMult).magnitude);
-		//		print (timeToTarg);
-		//		target.AttemptCatchAtTime(Time.time + timeToTarg );
+		float distToTarg = ((Vector2)this.transform.position - (Vector2)target.transform.position).magnitude;
+		float timeToTarg = distToTarg / ((vel *  passSpeedMult).magnitude);
+		target.AttemptCatchAtTime(Time.time + timeToTarg );
 	}
 	
 	public void ThrowToPos(Vector3 targPos, float velMult){
@@ -195,20 +217,26 @@ public class Ball : MonoBehaviour {
 
 	void VerticalSurfaceBounce(Collider other){
 		//Set up a raycast
-		Vector3 dir = vel.normalized;
+		Vector3 dir = (other.transform.position - this.transform.position).normalized;
+		Vector3 origin = prevPos + transform.lossyScale.magnitude * dir;
 		Ray ray = new Ray(prevPos, dir);
 		RaycastHit hit;
 		other.Raycast(ray, out hit, 20.0f);
 		Vector3 norm = hit.normal;
 		
 		// Bounce off the surface
-		vel = Vector3.Reflect(vel, norm) * bounciness;
+		vel = Vector3.Reflect(vel, norm) * 0.8f;
 		state = BallState.free;
+
+		// Added height for bounce off of a player
+		if(other.gameObject.GetComponent<Player>()){
+			heightVel = 0.5f;
+		}
 	}
 	
 	void FreeBallinLogic(){
 		// Put ball at rest if it is moving super slow
-		if(height < 0.01f && (heightVel < 0.01f && heightVel > -0.01f)){
+		if(height < 0.05f && (heightVel < 0.1f && heightVel > -0.1f)){
 			state = BallState.rest;
 			height = 0f;
 			heightVel = 0f;
@@ -218,8 +246,8 @@ public class Ball : MonoBehaviour {
 			if(height < 0f){
 				// Ball has hit the ground
 				height = 0f;
-				heightVel = -heightVel * bounciness;
-				vel *= bounciness;
+				heightVel = -heightVel * bounciness * 0.8f;
+				vel *= bounciness * 0.6f;
 			}
 		}
 	}
@@ -235,16 +263,16 @@ public class Ball : MonoBehaviour {
 		float maxHeightMult = 0.06f * (halfDistSqrd + multOffset);
 		
 		if(trajectory == Trajectory.EastWestHigh){
-			maxHeight = 14.0f * maxHeightMult;
+			maxHeight = 12.0f * maxHeightMult;
 			height = maxHeight * percentOfMax;
 		} else if(trajectory == Trajectory.NorthSouthHigh){
-			maxHeight = 24.0f * maxHeightMult;
+			maxHeight = 16.0f * maxHeightMult;
 			height = maxHeight * percentOfMax;
 		} else if(trajectory == Trajectory.mid){
-			maxHeight = 9.0f * maxHeightMult;
+			maxHeight = 4.0f * maxHeightMult;
 			height = maxHeight * percentOfMax;
 		} else if(trajectory == Trajectory.low){
-			maxHeight = 3.0f * maxHeightMult;
+			maxHeight = 2.2f * maxHeightMult;
 			height = maxHeight * percentOfMax;
 		} else {
 			print ("Error in PassTrajectoryLogic()");
