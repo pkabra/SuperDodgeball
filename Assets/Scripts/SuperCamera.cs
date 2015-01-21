@@ -21,6 +21,10 @@ public class SuperCamera : MonoBehaviour {
 			newXpos = leftLimit;
 		} 
 		Vector3 newPos = new Vector3(newXpos, this.transform.position.y, this.transform.position.z);
-		this.transform.position = Vector3.Lerp(this.transform.position, newPos, 0.25f);
+		if((this.transform.position - newPos).magnitude < 0.05f){
+			return;
+		}else {
+			this.transform.position = Vector3.Lerp(this.transform.position, newPos, 0.25f);
+		}
 	}
 }

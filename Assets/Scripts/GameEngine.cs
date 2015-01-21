@@ -96,10 +96,10 @@ public class GameEngine : MonoBehaviour {
 
 		h2 = Input.GetAxisRaw("Horizontal2");
 		y2 = Input.GetAxisRaw("Vertical2");
-		if( Input.GetKeyDown (KeyCode.Slash) ){
+		if( Input.GetKeyDown (KeyCode.Period) ){
 			b2 = true;
 		}
-		if( Input.GetKeyDown (KeyCode.Period) ){
+		if( Input.GetKeyDown (KeyCode.Comma) ){
 			a2 = true;
 		}
 
@@ -159,8 +159,8 @@ public class GameEngine : MonoBehaviour {
 					}
 				}
 				targPos.z = -1.0f;
-				player1.player.ThrowAt(targPos);
-				ball.ThrowToPos(targPos, .8f);
+				float throwVel1 = player1.player.ThrowAt(targPos);
+				ball.ThrowToPos(targPos, throwVel1);
 			} else {
 				// Pickup
 				player1.player.AttemptCatchAtTime(Time.time);
@@ -225,8 +225,8 @@ public class GameEngine : MonoBehaviour {
 					}
 				}
 				targPos.z = -1.0f;
-				player2.player.ThrowAt(targPos);
-				ball.ThrowToPos(targPos, .8f);
+				float throwVel2 = player2.player.ThrowAt(targPos);
+				ball.ThrowToPos(targPos, throwVel2);
 			} else {
 				// Pickup
 				player2.player.AttemptCatchAtTime(Time.time);

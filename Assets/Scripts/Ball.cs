@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public enum BallState { rest, free, held, pass, thrown };
+public enum BallState { rest, free, held, pass, thrown, powered };
 public enum Trajectory { none, low, mid, EastWestHigh, NorthSouthHigh };
 
 public class Ball : MonoBehaviour {
@@ -13,6 +13,8 @@ public class Ball : MonoBehaviour {
 	public Player holder = null;
 	public Player catcher = null;
 	public Transform spriteHolderTrans = null;
+	public Animator animator = null;
+	private int aniStateID = 0;
 	
 	// All variables below this point might be able to be moved inside functions,
 	// check on a case by case basis before doing so.
@@ -30,7 +32,8 @@ public class Ball : MonoBehaviour {
 	private float heightVel = 0.0f; // velocity along the height axis, used for faking gravity
 	private float gravity = -0.9f;
 	private float bounciness = 0.85f;
-	private Vector3 prevPos = Vector3.zero;
+	private int throwerTeam = 0;
+	public Vector3 prevPos = Vector3.zero;
 	
 	
 	//private GameObject passTarg = null;
@@ -38,7 +41,9 @@ public class Ball : MonoBehaviour {
 	void Start () {
 		GameEngine.ball = this;
 		spriteHolderTrans = this.transform.FindChild("SpriteHolder");
+		animator = this.gameObject.GetComponentInChildren<Animator>();
 		SuperCamera.target = this.gameObject;
+		aniStateID = Animator.StringToHash("state");
 	}
 	
 	// Once per frame
@@ -50,7 +55,7 @@ public class Ball : MonoBehaviour {
 		if(state == BallState.pass){
 			PassTrajectoryLogic();
 			this.transform.position += vel * passSpeedMult * Time.fixedDeltaTime;
-		} else if(state == BallState.thrown){
+		} else if(state == BallState.thrown || state == BallState.powered ){
 			this.transform.position += vel * throwSpeedMult * Time.fixedDeltaTime;
 		} else if(state == BallState.free){
 			FreeBallinLogic();
@@ -62,6 +67,7 @@ public class Ball : MonoBehaviour {
 		// Block for things that should always happen
 		Vector3 heightOffset = new Vector3( 0, height * YCompOfZ, 0 );
 		spriteHolderTrans.localPosition = heightOffset;
+		animator.SetInteger(aniStateID, (int)this.state);
 		
 	}
 	
@@ -74,7 +80,12 @@ public class Ball : MonoBehaviour {
 		
 		int othersLayer = other.gameObject.layer; 
 		Player pOther = other.GetComponent<Player>(); // maybe null if the 'other' is not a player
-		
+
+		// Special cases for when player not to be hit by ball
+		if(pOther && pOther.noBallHit){
+			return;
+		}
+
 		if(state == BallState.pass){
 			if(othersLayer == 9){ // If other is on the 'Players' layer
 				float heightDifference = height - pOther.height; // 
@@ -99,9 +110,13 @@ public class Ball : MonoBehaviour {
 			} else if(othersLayer == 11){
 				VerticalSurfaceBounce(other);
 			}
-		} else if (state == BallState.thrown){
+		} else if (state == BallState.thrown || state == BallState.powered){
 			if(pOther){
 				float heightDifference = height - pOther.height; // 
+				if((throwerTeam == 1 && pOther.CompareTag("Team1")) ||
+				   (throwerTeam == 2 && pOther.CompareTag("Team2"))){
+					return; // Do not hit own player with thrown ball
+				}
 				if((heightDifference > heightHitbox) || (heightDifference < (heightHitbox * -1f)))
 				{
 					return; // Do nothing because the ball went over or under the player
@@ -178,7 +193,11 @@ public class Ball : MonoBehaviour {
 		state = BallState.pass;
 		
 		//Set trajectory calculation info
-		trajectory = Trajectory.NorthSouthHigh; //TODO THIS NEEDS TO BE DYNAMICALLY SET BASED ON PASS TARGET 
+		if( target.fieldPosition == 1){
+			trajectory = Trajectory.low;  
+		} else if( target.fieldPosition == 2){
+			// TODO add full pass logic
+		}
 		passOrigin = this.transform.position;
 		//Vector3 originTemp = this.transform.position;
 		//passOrigin = originTemp - vel * 0.5f; // Set Origin to 'multiplier' units behind passer
@@ -210,7 +229,13 @@ public class Ball : MonoBehaviour {
 		Vector3 dir = targPos - this.transform.position;
 		dir.z = 0;
 		vel = dir.normalized * velMult;
-		state = BallState.thrown;
+		// Player sets ball state when he throws, this done for powered shot implementation
+		//state = BallState.thrown;
+		if(holder.CompareTag("Team1")){
+			throwerTeam = 1;
+		} else {
+			throwerTeam = 2;
+		}
 		
 		// set throwing player to 'throwing' state then remove holder
 		holder.StateThrowing();
@@ -290,7 +315,7 @@ public class Ball : MonoBehaviour {
 			maxHeight = 4.0f * maxHeightMult;
 			height = maxHeight * percentOfMax + heldHeight;
 		} else if(trajectory == Trajectory.low){
-			maxHeight = 2.2f * maxHeightMult;
+			maxHeight = 3.0f * maxHeightMult;
 			height = maxHeight * percentOfMax + heldHeight;
 		} else {
 			print ("Error in PassTrajectoryLogic()");

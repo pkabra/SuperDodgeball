@@ -25,6 +25,7 @@ public class Player : MonoBehaviour {
 	public KineticState kState = new KineticState();
 	public ActionState aState = new ActionState();
 	public PlayerFacing facing = PlayerFacing.east;
+	public int fieldPosition = 0;
 
 	public Transform spriteHolderTrans = null;
 
@@ -33,6 +34,7 @@ public class Player : MonoBehaviour {
 	public float tryCatchTime = 0f;
 	private bool xLock = false;
 	private bool yLock = false;
+	public bool noBallHit = false;
 	
 	// Use this for initialization
 	void Start () {
@@ -42,6 +44,7 @@ public class Player : MonoBehaviour {
 			GameEngine.team2.Add(this);
 		}
 		spriteHolderTrans = this.transform.FindChild("SpriteHolder");
+		fieldPosition = 1;
 	}
 
 	public void StateThrowing(){
@@ -176,7 +179,7 @@ public class Player : MonoBehaviour {
 	
 	// Handle Player Movement
 	public void Movement (float h, float v) {
-		if (kState.state != KineticStates.walk || kState.state != KineticStates.walk) return;
+		if (kState.state != KineticStates.walk && kState.state != KineticStates.run) return;
 		// Protection from overriding collision resolution
 		if(xLock){
 			xLock = false;
@@ -250,9 +253,18 @@ public class Player : MonoBehaviour {
 		StartCoroutine(AttemptCatchAtTimeCR());
 	}
 
-	public void ThrowAt(Vector3 targetPos){
+	public float ThrowAt(Vector3 targetPos){
+		float throwVel = 0.0f;
+		if(kState.state == KineticStates.run){
+			throwVel = 1.3f;
+			GameEngine.ball.state = BallState.powered;
+		} else {
+			throwVel = 0.8f;
+			GameEngine.ball.state = BallState.thrown;
+		}
 		StateThrowing();
 		StartCoroutine(TempNoCollide(0.15f));
+		return throwVel;
 	}
 
 	IEnumerator AttemptCatch(){
@@ -281,11 +293,11 @@ public class Player : MonoBehaviour {
 
 	public IEnumerator TempNoCollide(float secs){
 		float endTime = Time.time + secs;
-		this.collider.enabled = false;
+		this.noBallHit = true;
 		while(Time.time < endTime){
 			yield return null;
 		}
-		this.collider.enabled = true;
+		this.noBallHit = false;
 	}
 
 	public void PlayerHit(Ball other) {
