@@ -19,9 +19,15 @@ public class GameEngine : MonoBehaviour {
 	
 	public static Ball			ball;
 
+	public static float			gravity = -0.9f;
+
 	// These were put in the class scope so that we could change them in the Update()
 	// then apply them in FixedUpdate(). This fixes a problem I was having with the controls
 	// not responding everyframe. Perhaps these could be moved to the 'Controller' class?
+	private float h1 = 0.0f;
+	private float y1 = 0.0f;
+	private bool b1 = false;
+	private bool a1 = false;
 	private float h2 = 0.0f;
 	private float y2 = 0.0f;
 	private bool b2 = false;
@@ -78,15 +84,16 @@ public class GameEngine : MonoBehaviour {
 			player2.player.kState.state = KineticStates.walk;
 		}
 
-		//TESTING STUFF
-		if(Input.GetMouseButtonDown(0)){
-			Vector3 targPos = Input.mousePosition;
-			targPos.z = -1.0f;
-			targPos = Camera.main.ScreenToWorldPoint(targPos);
-			ball.ThrowToPos(targPos, .8f);
+		//Controls
+		h1 = Input.GetAxisRaw("Horizontal");
+		y1 = Input.GetAxisRaw("Vertical");
+		if( Input.GetKeyDown (KeyCode.X) ){
+			b1 = true;
+		}
+		if( Input.GetKeyDown (KeyCode.Z) ){
+			a1 = true;
 		}
 
-		//Controls
 		h2 = Input.GetAxisRaw("Horizontal2");
 		y2 = Input.GetAxisRaw("Vertical2");
 		if( Input.GetKeyDown (KeyCode.Slash) ){
@@ -119,31 +126,51 @@ public class GameEngine : MonoBehaviour {
 		}
 
 		// Controls
-		float h1 = Input.GetAxisRaw("Horizontal");
-		float y1 = Input.GetAxisRaw("Vertical");
-		bool a1 = Input.GetKey("z");
-		bool b1 = Input.GetKey("x");
 		if (b1 && a1) {
 			// Jump
 		} else if (a1) {
 			// Pickup or pass
 			if (player1.player.aState.state == ActionStates.holding) {
 				// Pass
-			} else {
+				foreach(Player p in team1) {
+					if (p.aState.state != ActionStates.holding) {
+						ball.PassTo(p);
+						break;
+					}
+				}
+			} else if(player1.player.aState.state == ActionStates.passing) {
 				// Pickup
+				if (Time.time - player1.player.aState.startTime > 0.5f) {
+					player1.player.aState.state = ActionStates.none;
+					player1.player.PickupBall();
+				}
+			} else {
 				player1.player.PickupBall();
 			}
 		} else if (b1) {
 			// Pickup or throw
 			if (player1.player.aState.state == ActionStates.holding) {
 				// Throw
+				// Aim to closest player
+				Vector3 targPos = team2[0].transform.position;
+				foreach (Player p in team2) {
+					if (Vector3.Distance(p.transform.position, player1.player.transform.position) < Vector3.Distance(targPos, player1.player.transform.position)) {
+						targPos = p.transform.position;
+					}
+				}
+				targPos.z = -1.0f;
+				player1.player.ThrowAt(targPos);
+				ball.ThrowToPos(targPos, .8f);
 			} else {
 				// Pickup
-				player1.player.PickupBall();
+				player1.player.AttemptCatchAtTime(Time.time);
 			}
 		} else {
 			player1.player.Movement(h1, y1);
 		}
+
+		a1 = false;
+		b1 = false;
 
 		//// Handle Player 2
 		if (player2.player == null) {
@@ -165,11 +192,6 @@ public class GameEngine : MonoBehaviour {
 		}
 		
 		// Controls
-		// Moved Update()
-//		float h2 = Input.GetAxisRaw("Horizontal2");
-//		float y2 = Input.GetAxisRaw("Vertical2");
-//		bool b2 = Input.GetKeyDown (KeyCode.Slash);
-//		bool a2 = Input.GetKeyDown (KeyCode.Period);
 		if (b2 && a2) {
 			// Jump
 		} else if (a2) {
@@ -196,8 +218,15 @@ public class GameEngine : MonoBehaviour {
 			if (player2.player.aState.state == ActionStates.holding) {
 				// Throw
 				// Aim Needed
-				player2.player.ThrowAt(Vector3.zero);
-				ball.ThrowToPos(Vector3.zero, 1.0f);
+				Vector3 targPos = team1[0].transform.position;
+				foreach (Player p in team1) {
+					if (Vector3.Distance(p.transform.position, player2.player.transform.position) < Vector3.Distance(targPos, player2.player.transform.position)) {
+						targPos = p.transform.position;
+					}
+				}
+				targPos.z = -1.0f;
+				player2.player.ThrowAt(targPos);
+				ball.ThrowToPos(targPos, .8f);
 			} else {
 				// Pickup
 				player2.player.AttemptCatchAtTime(Time.time);

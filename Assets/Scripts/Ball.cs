@@ -9,11 +9,11 @@ public class Ball : MonoBehaviour {
 	public float height = 0.0f;
 	public BallState state = BallState.rest;
 	public Trajectory trajectory = Trajectory.none;
-
+	
 	public Player holder = null;
 	public Player catcher = null;
 	public Transform spriteHolderTrans = null;
-
+	
 	// All variables below this point might be able to be moved inside functions,
 	// check on a case by case basis before doing so.
 	public float passSpeedMult = 3f;
@@ -24,6 +24,7 @@ public class Ball : MonoBehaviour {
 	public float maxHeight = 0.0f; // Max height of a trajectory
 	public float heightHitbox = 1.6f; // The hitbox of the ball extends this amount up and down on height axis
 	
+	private float heldHeight = 0.77f;
 	private float totalTrajDist = 0.0f; // Total distance from origin to intended target
 	private Vector3 passOrigin = Vector3.zero;
 	private float heightVel = 0.0f; // velocity along the height axis, used for faking gravity
@@ -37,6 +38,7 @@ public class Ball : MonoBehaviour {
 	void Start () {
 		GameEngine.ball = this;
 		spriteHolderTrans = this.transform.FindChild("SpriteHolder");
+		SuperCamera.target = this.gameObject;
 	}
 	
 	// Once per frame
@@ -62,17 +64,17 @@ public class Ball : MonoBehaviour {
 		spriteHolderTrans.localPosition = heightOffset;
 		
 	}
-
-
+	
+	
 	
 	void OnTriggerEnter(Collider other){
 		if(state == BallState.held){ // Do nothing if ball held
 			return;
 		}
-
+		
 		int othersLayer = other.gameObject.layer; 
 		Player pOther = other.GetComponent<Player>(); // maybe null if the 'other' is not a player
-
+		
 		if(state == BallState.pass){
 			if(othersLayer == 9){ // If other is on the 'Players' layer
 				float heightDifference = height - pOther.height; // 
@@ -85,15 +87,15 @@ public class Ball : MonoBehaviour {
 					VerticalSurfaceBounce(other);
 				}
 				
-//				foreach(Player p in GameEngine.team1) {
-//					if (pOther.GetInstanceID() == p.GetInstanceID()) {
-//						if (p.aState.state == ActionStates.catching) {
-//							// Caught
-//						} else {
-//							
-//						}
-//					}
-//				}
+				//				foreach(Player p in GameEngine.team1) {
+				//					if (pOther.GetInstanceID() == p.GetInstanceID()) {
+				//						if (p.aState.state == ActionStates.catching) {
+				//							// Caught
+				//						} else {
+				//							
+				//						}
+				//					}
+				//				}
 			} else if(othersLayer == 11){
 				VerticalSurfaceBounce(other);
 			}
@@ -106,17 +108,18 @@ public class Ball : MonoBehaviour {
 				} else if(pOther.aState.state == ActionStates.catching){
 					StateHeld(pOther);
 				} else {
+					pOther.PlayerHit(this);
 					VerticalSurfaceBounce(other);
 				}
 			} else {
 				VerticalSurfaceBounce(other);
 			}
 		}
-//		else if(other.gameObject.layer == 11){ // If other is on the 'OutfieldBoundary' layer
-//			//TEMP
-//			vel = Vector3.zero;
-//			state = BallState.free;
-//		}
+		//		else if(other.gameObject.layer == 11){ // If other is on the 'OutfieldBoundary' layer
+		//			//TEMP
+		//			vel = Vector3.zero;
+		//			state = BallState.free;
+		//		}
 	}
 	
 	void OnTriggerStay(Collider other){
@@ -148,7 +151,7 @@ public class Ball : MonoBehaviour {
 		//		this.transform.position = pos;
 		
 		//Set ball height and position for being held
-		Vector3 pos = new Vector3(0.77f, 0, 0); // Position of ball relative to holder
+		Vector3 pos = new Vector3(heldHeight, 0, 0); // Position of ball relative to holder
 		this.transform.parent = holder.transform;
 		height = 1.3f;
 		this.transform.localPosition = pos;
@@ -176,12 +179,13 @@ public class Ball : MonoBehaviour {
 		
 		//Set trajectory calculation info
 		trajectory = Trajectory.NorthSouthHigh; //TODO THIS NEEDS TO BE DYNAMICALLY SET BASED ON PASS TARGET 
-		Vector3 originTemp = this.transform.position;
-		passOrigin = originTemp - vel * 0.5f; // Set Origin to 'multiplier' units behind passer
-
-		totalTrajDist = Mathf.Max(vecToTarg.magnitude + 0.5f, 0.5f);
+		passOrigin = this.transform.position;
+		//Vector3 originTemp = this.transform.position;
+		//passOrigin = originTemp - vel * 0.5f; // Set Origin to 'multiplier' units behind passer
+		
+		totalTrajDist = Mathf.Max(vecToTarg.magnitude - 0.5f, 0.2f);
 		//totalTrajDist = toTarg.magnitude;
-
+		
 		//Change holder info 
 		holder.aState.state = ActionStates.passing;
 		holder.aState.startTime = Time.time;
@@ -194,7 +198,7 @@ public class Ball : MonoBehaviour {
 		float timeToTarg = distToTarg / ((vel *  passSpeedMult).magnitude);
 		target.AttemptCatchAtTime(Time.time + timeToTarg );
 	}
-
+	
 	// Throw the ball at a target position at a velocity relative to the multiplier passed in.
 	// The ball is not affected by gravity during a throw.
 	public void ThrowToPos(Vector3 targPos, float velMult){
@@ -212,14 +216,14 @@ public class Ball : MonoBehaviour {
 		holder.StateThrowing();
 		holder = null;
 	}
-
+	
 	// This function contains the logic for how the ball should bounce off a vertical surface.
 	// Outer boundaries and players are considered vertical surfaces. It should be possible 
 	// for the ball to strike vertical surface anytime it is in motion.
 	void VerticalSurfaceBounce(Collider other){
 		//Set up a raycast
 		Vector3 dir = (other.transform.position - this.transform.position).normalized;
-		Vector3 origin = prevPos + transform.lossyScale.magnitude * dir;
+//		Vector3 origin = prevPos + transform.lossyScale.magnitude * dir;
 		Ray ray = new Ray(prevPos, dir);
 		RaycastHit hit;
 		other.Raycast(ray, out hit, 20.0f);
@@ -228,13 +232,13 @@ public class Ball : MonoBehaviour {
 		// Bounce off the surface
 		vel = Vector3.Reflect(vel, norm) * 0.8f;
 		state = BallState.free;
-
+		
 		// Added height for bounce off of a player
 		if(other.gameObject.GetComponent<Player>()){
 			heightVel = 10.0f;
 		}
 	}
-
+	
 	// This function allows the ball to fall responding to 'gravity' and bounce off the ground.
 	// The ball loses velocity with each bounce relative to the 'bounciness' variable.
 	void FreeBallinLogic(){
@@ -253,12 +257,12 @@ public class Ball : MonoBehaviour {
 				vel *= bounciness * 0.6f;
 			}
 		}
-
+		
 		if(vel.magnitude < 0.05f){
 			vel = Vector3.zero;
 		}
 	}
-
+	
 	// The following trajectories have their heights above the ground implented as functions of distance
 	// from the origin of the pass rather than gravity and time. The trajectory function is only applied when
 	// the ball is in the 'pass' state. If the ball hits something while in 'pass' state it will transition
@@ -272,22 +276,22 @@ public class Ball : MonoBehaviour {
 		float percentOfMax = 1f - (Mathf.Pow (distFromMidpoint,2f) / halfDistSqrd);
 		float multOffset = 5.0f;
 		float maxHeightMult = 0.06f * (halfDistSqrd + multOffset);
-
+		
 		// These are different types of trajectories. It seemed that passes from different
 		// positions resulted in different trajectories. Feel free to adjust the unnamed multiplier
 		// to get the appropriate look for your trajectory.
 		if(trajectory == Trajectory.EastWestHigh){
 			maxHeight = 12.0f * maxHeightMult;
-			height = maxHeight * percentOfMax;
+			height = maxHeight * percentOfMax + heldHeight;
 		} else if(trajectory == Trajectory.NorthSouthHigh){
 			maxHeight = 16.0f * maxHeightMult;
-			height = maxHeight * percentOfMax;
+			height = maxHeight * percentOfMax + heldHeight;
 		} else if(trajectory == Trajectory.mid){
 			maxHeight = 4.0f * maxHeightMult;
-			height = maxHeight * percentOfMax;
+			height = maxHeight * percentOfMax + heldHeight;
 		} else if(trajectory == Trajectory.low){
 			maxHeight = 2.2f * maxHeightMult;
-			height = maxHeight * percentOfMax;
+			height = maxHeight * percentOfMax + heldHeight;
 		} else {
 			print ("Error in PassTrajectoryLogic()");
 		}

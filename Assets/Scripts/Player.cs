@@ -20,9 +20,13 @@ public class Player : MonoBehaviour {
 	public Vector3 pos0 = Vector3.zero; // previous frame position
 	public Vector3 vel = Vector3.zero;
 	public float height = 0.0f; // height above ground plane
+	public float heightVel = 0f;
+	public float bounciness = 0.85f;
 	public KineticState kState = new KineticState();
 	public ActionState aState = new ActionState();
 	public PlayerFacing facing = PlayerFacing.east;
+
+	public Transform spriteHolderTrans = null;
 
 	public float catchingTime = 0.8f;
 	public float catchAttemptBuffer = 0.3f;
@@ -37,6 +41,7 @@ public class Player : MonoBehaviour {
 		} else {
 			GameEngine.team2.Add(this);
 		}
+		spriteHolderTrans = this.transform.FindChild("SpriteHolder");
 	}
 
 	public void StateThrowing(){
@@ -171,6 +176,7 @@ public class Player : MonoBehaviour {
 	
 	// Handle Player Movement
 	public void Movement (float h, float v) {
+		if (kState.state != KineticStates.walk || kState.state != KineticStates.walk) return;
 		// Protection from overriding collision resolution
 		if(xLock){
 			xLock = false;
@@ -280,5 +286,49 @@ public class Player : MonoBehaviour {
 			yield return null;
 		}
 		this.collider.enabled = true;
+	}
+
+	public void PlayerHit(Ball other) {
+		kState.state = KineticStates.fall;
+
+		// Just take the velocity the ball was moving in and multiply by 3
+		// We know the ball velocity will be constant
+		// Will need to add a clause for power shots
+		vel = other.vel * 3;
+		
+		// Added height for bounce off of a player
+		heightVel = 10f;
+	}
+
+	void FixedUpdate() {
+		if (this.kState.state == KineticStates.fall) {
+			PlayerFallLogic();
+			this.transform.position += vel * Time.fixedDeltaTime;
+		}
+
+		// Block for things that should always happen
+		Vector3 heightOffset = new Vector3( 0, height * 0.5f + 1.2f, 0 );
+		spriteHolderTrans.localPosition = heightOffset;
+	}
+
+	void PlayerFallLogic() {
+		if(height < 0.05f && (heightVel < 0.1f && heightVel > -0.1f)){
+			kState.state = KineticStates.walk;
+			height = 0f;
+			heightVel = 0f;
+		} else {
+			heightVel += GameEngine.gravity;
+			height += heightVel * Time.fixedDeltaTime;
+			if(height < 0f){
+				// Ball has hit the ground
+				height = 0f;
+				heightVel = 0f;
+				vel *= 0.9f;
+			}
+		}
+		
+		if(vel.magnitude < 0.05f){
+			vel = Vector3.zero;
+		}
 	}
 }
