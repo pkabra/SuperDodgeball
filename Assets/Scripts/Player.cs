@@ -78,7 +78,7 @@ public class Player : MonoBehaviour {
 				} else if (vel.y < 0f){ // hit top
 					hitOnTop = true;
 				} else {
-					print ("Player is not moving, should not hit boundary");
+					//print ("Player is not moving, should not hit boundary");
 				}
 				//print (desiredPos);
 			} else { // travel is diagonal
@@ -135,8 +135,9 @@ public class Player : MonoBehaviour {
 				}
 				
 				if(rayNeeded){
+					//print ("casting Ray.");
 					//Cast ray
-					Ray ray = new Ray(this.transform.position, dir);
+					Ray ray = new Ray(origin, dir);
 					RaycastHit hit;
 					other.Raycast(ray, out hit, 20.0f);
 					Vector3 norm = hit.normal;
@@ -172,7 +173,12 @@ public class Player : MonoBehaviour {
 				yLock = true;
 				desiredPos.y = other.transform.position.y + (boundaryHalfHeight + thisHalfHeight + 0.001f);
 			}
-			
+
+			if(Vector3.Distance(this.transform.position,pos0) <= Vector3.Distance(desiredPos,pos0)){
+				desiredPos.x = this.transform.position.x; // helps resolve colliding with more than one collider
+				desiredPos.y = this.transform.position.y;
+			}
+
 			this.transform.position = desiredPos;
 		}
 	}
@@ -249,7 +255,7 @@ public class Player : MonoBehaviour {
 
 	public void AttemptCatchAtTime(float catchTime){
 		tryCatchTime = catchTime;
-		print (tryCatchTime);
+		//print (tryCatchTime);
 		StartCoroutine(AttemptCatchAtTimeCR());
 	}
 
@@ -269,12 +275,12 @@ public class Player : MonoBehaviour {
 
 	IEnumerator AttemptCatch(){
 		float endTime = Time.time + catchingTime;
-		print ("hands up");
+		//print ("hands up");
 		aState.state = ActionStates.catching;
 		while(Time.time < endTime){
 			yield return null;
 		}
-		print ("hands down");
+		//print ("hands down");
 		if(aState.state == ActionStates.catching){
 			kState.state = KineticStates.stand;
 			aState.state = ActionStates.none;
