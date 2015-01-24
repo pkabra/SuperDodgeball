@@ -59,130 +59,19 @@ public class Player : MonoBehaviour {
 	void OnTriggerEnter(Collider other){
 		
 		if(other.gameObject.tag == "InfieldBoundary"){
-			//print ("Boundary Collision Detected");
-			float boundaryHalfWidth = other.transform.lossyScale.x / 2.0f;
-			float boundaryHalfHeight = other.transform.lossyScale.y / 2.0f;
-			float thisHalfWidth = this.transform.lossyScale.x / 2.0f;
-			float thisHalfHeight = this.transform.lossyScale.y / 2.0f;
-			Vector3 desiredPos = this.transform.position;
-			bool hitOnLeft = false;
-			bool hitOnRight = false;
-			bool hitOnTop = false;
-			bool hitOnBottom = false;
-			
-			//print (vel);
-			if((vel.x < 0.0001f && vel.x > -0.0001f) || (vel.y < 0.0001f && vel.y > -0.0001f)){ // Is non-diag vector, no raycast needed
-				if(vel.x > 0f){ // Hit left side 
-					hitOnLeft = true;
-				} else if (vel.x < 0f){ // Hit right side
-					hitOnRight = true;
-				} else if (vel.y > 0f){ // Hit bottom
-					hitOnBottom = true;
-				} else if (vel.y < 0f){ // hit top
-					hitOnTop = true;
-				} else {
-					//print ("Player is not moving, should not hit boundary");
-				}
-				//print (desiredPos);
-			} else { // travel is diagonal
-				
-				
-				//Determine correct origin and direction for ray
-				Vector3 dir = vel.normalized;
-				Vector3 origin = pos0;
-				bool rayNeeded = false;
-				if(vel.x > 0f){
-					if(vel.y > 0f){ //NE
-						if((pos0.y + thisHalfHeight) > (other.transform.position.y - boundaryHalfHeight)){
-							hitOnLeft = true;
-						} else if((pos0.x + thisHalfWidth) > (other.transform.position.x - boundaryHalfWidth)){
-							hitOnBottom = true;
-						} else {
-							rayNeeded = true;
-							origin.x += thisHalfWidth;
-							origin.y += thisHalfHeight;
-						}
-					}else if(vel.y < 0f){ //SE
-						if((pos0.y - thisHalfHeight) < (other.transform.position.y + boundaryHalfHeight)){
-							hitOnLeft = true;
-						} else if((pos0.x + thisHalfWidth) > (other.transform.position.x - boundaryHalfWidth)){
-							hitOnTop = true;
-						} else {
-							rayNeeded = true;
-							origin.x += thisHalfWidth;
-							origin.y -= thisHalfHeight;
-						}
-					}
-				} else if(vel.y > 0f){ //NW
-					if((pos0.y + thisHalfHeight) > (other.transform.position.y - boundaryHalfHeight)){
-						hitOnRight = true;
-					} else if((pos0.x - thisHalfWidth) < (other.transform.position.x + boundaryHalfWidth)){
-						hitOnBottom = true;
-					} else {
-						rayNeeded = true;
-						origin.x -= thisHalfWidth;
-						origin.y += thisHalfHeight;
-					}
-				} else if(vel.y < 0f){ //SW
-					if((pos0.y - thisHalfHeight) < (other.transform.position.y + boundaryHalfHeight)){
-						hitOnRight = true;
-					} else if((pos0.x - thisHalfWidth) < (other.transform.position.x + boundaryHalfWidth)){
-						hitOnTop = true;
-					} else {
-						rayNeeded = true;
-						origin.x -= thisHalfWidth;
-						origin.y -= thisHalfHeight;
-					}
-				} else {
-					print ("Error finding Raycast origin in Player.OnTriggerEnter()");
-				}
-				
-				if(rayNeeded){
-					//print ("casting Ray.");
-					//Cast ray
-					Ray ray = new Ray(origin, dir);
-					RaycastHit hit;
-					other.Raycast(ray, out hit, 20.0f);
-					Vector3 norm = hit.normal;
-					//print (norm);
-					if(norm.x > 0){
-						//print ("right side");
-						hitOnRight = true;
-					} else if( norm.x < 0){	
-						//print ("left side");
-						hitOnLeft = true;
-					} else if( norm.y > 0){
-						//print ("top side");
-						hitOnTop = true;
-					} else if ( norm.y < 0){
-						//print ("bottom side");
-						hitOnBottom = true;
-					} else {
-						print ("Raycast sucks.");
-					}
-				}
+			if(kState.state == KineticStates.walk)
+			{
+				InfieldCollideLogic(other);
 			}
-			
-			if(hitOnLeft){ // Hit left side 
-				xLock = true;
-				desiredPos.x = other.transform.position.x - (boundaryHalfWidth + thisHalfWidth + 0.001f);
-			} else if (hitOnRight){ // Hit right side
-				xLock = true;
-				desiredPos.x = other.transform.position.x + (boundaryHalfWidth + thisHalfWidth + 0.001f);
-			} else if (hitOnBottom){ // Hit bottom
-				yLock = true;
-				desiredPos.y = other.transform.position.y - (boundaryHalfHeight + thisHalfHeight + 0.001f);
-			} else if (hitOnTop){ // hit top
-				yLock = true;
-				desiredPos.y = other.transform.position.y + (boundaryHalfHeight + thisHalfHeight + 0.001f);
-			}
+		}
+	}
 
-			if(Vector3.Distance(this.transform.position,pos0) <= Vector3.Distance(desiredPos,pos0)){
-				desiredPos.x = this.transform.position.x; // helps resolve colliding with more than one collider
-				desiredPos.y = this.transform.position.y;
+	void OnTriggerStay(Collider other){
+		if(other.gameObject.tag == "InfieldBoundary"){
+			if(kState.state == KineticStates.walk)
+			{
+				InfieldCollideLogic(other);
 			}
-
-			this.transform.position = desiredPos;
 		}
 	}
 	
@@ -276,6 +165,16 @@ public class Player : MonoBehaviour {
 		} else if(kState.state == KineticStates.walk){
 			throwVel = 1.0f;
 			GameEngine.ball.state = BallState.thrown;
+		} else if (kState.state == KineticStates.runjump) {
+			print ("running jump throw!");
+			print (jumpVelY);
+			if (jumpVelY < 5f && jumpVelY > -5f) {
+				throwVel = 1.5f;
+				GameEngine.ball.state = BallState.powered;
+			} else {
+				throwVel = 1f;
+				GameEngine.ball.state = BallState.thrown;
+			}
 		} else {
 			throwVel = 0.9f;
 			GameEngine.ball.state = BallState.thrown;
@@ -349,7 +248,15 @@ public class Player : MonoBehaviour {
 		if (height > 0f) return;
 		
 		if (kState.state == KineticStates.run) {
-			
+			kState.state = KineticStates.runjump;
+			jumpVelX = 0f;
+			if (h > 0f) {
+				jumpVelX = 0.1f;
+			} else if (h < 0f) {
+				jumpVelX = -0.1f;
+			}
+			jumpVelY = 30f;
+			print ("running jump!");
 		} else {
 			kState.state = KineticStates.jump;
 			jumpVelX = 0f;
@@ -358,11 +265,10 @@ public class Player : MonoBehaviour {
 			} else if (h < 0f) {
 				jumpVelX = -0.05f;
 			}
-			
 			jumpVelY = 30f;
+			print ("normal jump!");
 		}
 		height = 0.1f;
-		print ("starting to jump!");
 	}
 
 	void JumpLogic() {
@@ -402,6 +308,150 @@ public class Player : MonoBehaviour {
 		
 		if(vel.magnitude < 0.05f){
 			vel = Vector3.zero;
+		}
+	}
+
+	void InfieldCollideLogic(Collider other){
+		if(other.gameObject.tag == "InfieldBoundary"){
+			//print ("Boundary Collision Detected");
+			float boundaryHalfWidth = other.transform.lossyScale.x / 2.0f;
+			float boundaryHalfHeight = other.transform.lossyScale.y / 2.0f;
+			float thisHalfWidth = this.transform.lossyScale.x / 2.0f;
+			float thisHalfHeight = this.transform.lossyScale.y / 2.0f;
+			Vector3 desiredPos = this.transform.position;
+			bool hitOnLeft = false;
+			bool hitOnRight = false;
+			bool hitOnTop = false;
+			bool hitOnBottom = false;
+			
+			//print (vel);
+			if((vel.x < 0.0001f && vel.x > -0.0001f) || (vel.y < 0.0001f && vel.y > -0.0001f)){ // Is non-diag vector, no raycast needed
+				if(vel.x > 0f){ // Hit left side 
+					hitOnLeft = true;
+				} else if (vel.x < 0f){ // Hit right side
+					hitOnRight = true;
+				} else if (vel.y > 0f){ // Hit bottom
+					hitOnBottom = true;
+				} else if (vel.y < 0f){ // hit top
+					hitOnTop = true;
+				} else {
+					//print ("Player is not moving, should not hit boundary");
+				}
+				//print (desiredPos);
+			} else { // travel is diagonal
+				
+				
+				//Determine correct origin and direction for ray
+				Vector3 dir = vel.normalized;
+				Vector3 origin = pos0;
+				bool rayNeeded = false;
+				if(vel.x > 0f){
+					if(vel.y > 0f){ //NE
+						if((pos0.y + thisHalfHeight) > (other.transform.position.y - boundaryHalfHeight)){
+							hitOnLeft = true;
+						} else if((pos0.x + thisHalfWidth) > (other.transform.position.x - boundaryHalfWidth)){
+							hitOnBottom = true;
+						} else {
+							rayNeeded = true;
+							origin.x += thisHalfWidth;
+							origin.y += thisHalfHeight;
+						}
+					}else if(vel.y < 0f){ //SE
+						if((pos0.y - thisHalfHeight) < (other.transform.position.y + boundaryHalfHeight)){
+							hitOnLeft = true;
+						} else if((pos0.x + thisHalfWidth) > (other.transform.position.x - boundaryHalfWidth)){
+							hitOnTop = true;
+						} else {
+							rayNeeded = true;
+							origin.x += thisHalfWidth;
+							origin.y -= thisHalfHeight;
+						}
+					}
+				} else if(vel.y > 0f){ //NW
+					if((pos0.y + thisHalfHeight) > (other.transform.position.y - boundaryHalfHeight)){
+						hitOnRight = true;
+					} else if((pos0.x - thisHalfWidth) < (other.transform.position.x + boundaryHalfWidth)){
+						hitOnBottom = true;
+					} else {
+						rayNeeded = true;
+						origin.x -= thisHalfWidth;
+						origin.y += thisHalfHeight;
+					}
+				} else if(vel.y < 0f){ //SW
+					if((pos0.y - thisHalfHeight) < (other.transform.position.y + boundaryHalfHeight)){
+						hitOnRight = true;
+					} else if((pos0.x - thisHalfWidth) < (other.transform.position.x + boundaryHalfWidth)){
+						hitOnTop = true;
+					} else {
+						rayNeeded = true;
+						origin.x -= thisHalfWidth;
+						origin.y -= thisHalfHeight;
+					}
+				} else {
+					print ("Error finding Raycast origin in Player.OnTriggerEnter()");
+				}
+				
+				if(rayNeeded){
+					print ("casting Ray.");
+					//Cast ray
+					Ray ray = new Ray(origin, dir);
+					RaycastHit hit;
+					other.Raycast(ray, out hit, 20.0f);
+					Vector3 norm = hit.normal;
+					//print (norm);
+					if(norm.x > 0){
+						//print ("right side");
+						hitOnRight = true;
+					} else if( norm.x < 0){	
+						//print ("left side");
+						hitOnLeft = true;
+					} else if( norm.y > 0){
+						//print ("top side");
+						hitOnTop = true;
+					} else if ( norm.y < 0){
+						//print ("bottom side");
+						hitOnBottom = true;
+					} else {
+						print ("Raycast sucks.");
+					}
+				}
+			}
+			
+			if(hitOnLeft){ // Hit left side 
+				print ("hit left");
+				xLock = true;
+				desiredPos.x = other.transform.position.x - (boundaryHalfWidth + thisHalfWidth + 0.001f);
+			} else if (hitOnRight){ // Hit right side
+				print ("hit right");
+				xLock = true;
+				desiredPos.x = other.transform.position.x + (boundaryHalfWidth + thisHalfWidth + 0.001f);
+			} else if (hitOnBottom){ // Hit bottom
+				print ("hit bottom");
+				yLock = true;
+				desiredPos.y = other.transform.position.y - (boundaryHalfHeight + thisHalfHeight + 0.001f);
+			} else if (hitOnTop){ // hit top
+				print ("hit top");
+				yLock = true;
+				desiredPos.y = other.transform.position.y + (boundaryHalfHeight + thisHalfHeight + 0.001f);
+			}
+			
+			if(Vector3.Distance(this.transform.position,pos0) <= Vector3.Distance(desiredPos,pos0)){
+				desiredPos.x = this.transform.position.x; // helps resolve colliding with more than one collider
+				desiredPos.y = this.transform.position.y;
+			}
+			
+			this.transform.position = desiredPos;
+			
+			if (GameEngine.ball.holder != null && GetInstanceID() == GameEngine.ball.holder.GetInstanceID()){
+				Vector3 pos = transform.position;
+				if (facing == PlayerFacing.west || facing == PlayerFacing.northWest || facing == PlayerFacing.southWest) {
+					pos.x -= GameEngine.ball.heldOffsetX;
+				} else {
+					pos.x += GameEngine.ball.heldOffsetX;
+				}
+				pos.y += height * 0.2f + 0.5f;
+				GameEngine.ball.transform.position = pos;
+			}
 		}
 	}
 }

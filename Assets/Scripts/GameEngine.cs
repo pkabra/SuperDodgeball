@@ -78,7 +78,7 @@ public class GameEngine : MonoBehaviour {
 		
 		//// Player 2 double tap detection
 		// left
-		if (player1.player.kState.state == KineticStates.walk || player1.player.kState.state == KineticStates.run) {
+		if (player2.player.kState.state == KineticStates.walk || player2.player.kState.state == KineticStates.run) {
 			if(Input.GetKeyDown("left")) {
 				if (Time.time - player2.lastLeftKeyPress < 0.2f) {
 					player2.player.kState.state = KineticStates.run;
@@ -193,6 +193,7 @@ public class GameEngine : MonoBehaviour {
 					}
 				}
 				targPos.z = -1.0f;
+				targPos.y += 0.5f;
 				float throwVel1 = player1.player.ThrowAt(targPos);
 				ball.ThrowToPos(targPos, throwVel1);
 			} else {
@@ -260,6 +261,7 @@ public class GameEngine : MonoBehaviour {
 					}
 				}
 				targPos.z = -1.0f;
+				targPos.y += 0.5f;
 				float throwVel2 = player2.player.ThrowAt(targPos);
 				ball.ThrowToPos(targPos, throwVel2);
 			} else {
@@ -273,6 +275,7 @@ public class GameEngine : MonoBehaviour {
 		player2.a = false;
 		player2.b = false;
 	}
+
 	public static void ChangeControl(string tag) {
 		if (tag == "Team1") {
 			foreach(Player p in team1) {

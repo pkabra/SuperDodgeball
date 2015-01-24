@@ -26,7 +26,7 @@ public class Ball : MonoBehaviour {
 	public float maxHeight = 0.0f; // Max height of a trajectory
 	public float heightHitbox = 1.6f; // The hitbox of the ball extends this amount up and down on height axis
 	
-	private float heldOffsetX = 0.5f;
+	public float heldOffsetX = 0.5f;
 	private float heldHeight = 1.3f;
 	private float totalTrajDist = 0.0f; // Total distance from origin to intended target
 	private Vector3 passOrigin = Vector3.zero;
@@ -190,6 +190,7 @@ public class Ball : MonoBehaviour {
 		//Set trajectetory calculation info
 		if(holder.fieldPosition == 1){
 			if(target.fieldPosition == 4){
+				vecToTarg -= vecToTarg.normalized;
 				trajectory = Trajectory.EastWestHigh;
 			} else if (target.fieldPosition == 3 || target.fieldPosition == 2){
 				trajectory = Trajectory.mid;
@@ -219,7 +220,7 @@ public class Ball : MonoBehaviour {
 		}
 
 		passOrigin = this.transform.position;
-		totalTrajDist = Mathf.Max(vecToTarg.magnitude - 0.8f, 0.2f);
+		totalTrajDist = Mathf.Max(vecToTarg.magnitude - 0.2f, 0.2f);
 		
 		//Change holder info 
 		holder.aState.state = ActionStates.passing;
@@ -238,7 +239,11 @@ public class Ball : MonoBehaviour {
 	public void ThrowToPos(Vector3 targPos, float velMult){
 		// release ball from holder and enable collider
 		this.collider.enabled = true;
-		transform.parent = null;
+		
+		Vector3 pos = this.transform.position;
+		pos.y -= 0.5f;
+		transform.position = pos;
+		height = 1f;
 		
 		// set new ball state and velocity in direction of target
 		Vector3 dir = targPos - this.transform.position;
