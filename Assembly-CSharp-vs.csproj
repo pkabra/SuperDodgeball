@@ -50,6 +50,7 @@
      <Compile Include="Assets\Scripts\GameEngine.cs" />
      <Compile Include="Assets\Scripts\InfieldPlayerBoundry.cs" />
      <Compile Include="Assets\Scripts\Player.cs" />
+     <Compile Include="Assets\Scripts\Sideline.cs" />
      <Compile Include="Assets\Scripts\SizePrint.cs" />
      <Compile Include="Assets\Scripts\SuperCamera.cs" />
  <Reference Include="UnityEngine.UI">

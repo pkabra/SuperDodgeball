@@ -18,6 +18,7 @@ public class GameEngine : MonoBehaviour {
 	public static Controller	player2 = new Controller();
 	
 	public static Ball			ball;
+	public static Sideline      sideline;
 
 	public static float			gravity = -0.9f;
 
