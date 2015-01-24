@@ -11,7 +11,7 @@ public class ActionState {
 }
 
 public class KineticState {
-	public KineticStates state = KineticStates.none;
+	public KineticStates state = KineticStates.walk;
 	public float startTime = 0f;
 }
 
@@ -26,6 +26,9 @@ public class Player : MonoBehaviour {
 	public ActionState aState = new ActionState();
 	public PlayerFacing facing = PlayerFacing.east;
 	public int fieldPosition = 0;
+
+	public float jumpVelX = 0f;
+	public float jumpVelY = 0f;
 
 	public Transform spriteHolderTrans = null;
 
@@ -186,6 +189,7 @@ public class Player : MonoBehaviour {
 	// Handle Player Movement
 	public void Movement (float h, float v) {
 		if (kState.state != KineticStates.walk && kState.state != KineticStates.run) return;
+		if (aState.state == ActionStates.catching) return;
 		// Protection from overriding collision resolution
 		if(xLock){
 			xLock = false;
@@ -256,16 +260,24 @@ public class Player : MonoBehaviour {
 	public void AttemptCatchAtTime(float catchTime){
 		tryCatchTime = catchTime;
 		//print (tryCatchTime);
-		StartCoroutine(AttemptCatchAtTimeCR());
+		if(this.aState.state != ActionStates.catching){
+			StartCoroutine(AttemptCatchAtTimeCR());
+		} else {
+			//DO NOTHING
+			print ("Im doing nothing");
+		}
 	}
 
 	public float ThrowAt(Vector3 targetPos){
 		float throwVel = 0.0f;
 		if(kState.state == KineticStates.run){
-			throwVel = 1.3f;
+			throwVel = 1.5f;
 			GameEngine.ball.state = BallState.powered;
+		} else if(kState.state == KineticStates.walk){
+			throwVel = 1.0f;
+			GameEngine.ball.state = BallState.thrown;
 		} else {
-			throwVel = 0.8f;
+			throwVel = 0.9f;
 			GameEngine.ball.state = BallState.thrown;
 		}
 		StateThrowing();
@@ -282,7 +294,6 @@ public class Player : MonoBehaviour {
 		}
 		//print ("hands down");
 		if(aState.state == ActionStates.catching){
-			kState.state = KineticStates.stand;
 			aState.state = ActionStates.none;
 		}
 	}
@@ -323,10 +334,54 @@ public class Player : MonoBehaviour {
 			PlayerFallLogic();
 			this.transform.position += vel * Time.fixedDeltaTime;
 		}
-
+		
+		if (this.kState.state == KineticStates.jump || this.kState.state == KineticStates.runjump) {
+			JumpLogic();
+		}
+		
 		// Block for things that should always happen
 		Vector3 heightOffset = new Vector3( 0, height * 0.5f + 1.2f, 0 );
 		spriteHolderTrans.localPosition = heightOffset;
+	}
+
+	public void Jump(float h) {
+		if (kState.state != KineticStates.walk && kState.state != KineticStates.run) return;
+		if (height > 0f) return;
+		
+		if (kState.state == KineticStates.run) {
+			
+		} else {
+			kState.state = KineticStates.jump;
+			jumpVelX = 0f;
+			if (h > 0f) {
+				jumpVelX = 0.05f;
+			} else if (h < 0f) {
+				jumpVelX = -0.05f;
+			}
+			
+			jumpVelY = 30f;
+		}
+		height = 0.1f;
+		print ("starting to jump!");
+	}
+
+	void JumpLogic() {
+		if (height < 0f) {
+			print ("done with jump.");
+			kState.state = KineticStates.walk;
+			jumpVelX = 0f;
+			jumpVelY = 0f;
+			height = 0f;
+		} else {
+			print ("jumping!");
+			print (height);
+			jumpVelY += GameEngine.gravity*3;
+			height += jumpVelY * Time.fixedDeltaTime;
+			
+			Vector3 pos = transform.position;
+			pos.x += jumpVelX;
+			transform.position = pos;
+		}
 	}
 
 	void PlayerFallLogic() {

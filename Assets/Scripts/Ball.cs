@@ -26,7 +26,8 @@ public class Ball : MonoBehaviour {
 	public float maxHeight = 0.0f; // Max height of a trajectory
 	public float heightHitbox = 1.6f; // The hitbox of the ball extends this amount up and down on height axis
 	
-	private float heldHeight = 0.77f;
+	private float heldOffsetX = 0.5f;
+	private float heldHeight = 1.3f;
 	private float totalTrajDist = 0.0f; // Total distance from origin to intended target
 	private Vector3 passOrigin = Vector3.zero;
 	private float heightVel = 0.0f; // velocity along the height axis, used for faking gravity
@@ -34,6 +35,8 @@ public class Ball : MonoBehaviour {
 	private float bounciness = 0.85f;
 	private int throwerTeam = 0;
 	public Vector3 prevPos = Vector3.zero;
+
+	private GameObject shadow = null;
 	
 	
 	//private GameObject passTarg = null;
@@ -44,24 +47,41 @@ public class Ball : MonoBehaviour {
 		animator = this.gameObject.GetComponentInChildren<Animator>();
 		SuperCamera.target = this.gameObject;
 		aniStateID = Animator.StringToHash("state");
+		shadow = this.transform.FindChild("ballShadow").gameObject;
 	}
 	
 	// Once per frame
 	void FixedUpdate () {
 		// Save prev position info
 		prevPos = transform.position;
+
+		shadow.renderer.enabled = true;
 		
 		// State specific things
 		if(state == BallState.pass){
 			PassTrajectoryLogic();
-			this.transform.position += vel * passSpeedMult * Time.fixedDeltaTime;
+			if(state == BallState.pass){
+				this.transform.position += vel * passSpeedMult * Time.fixedDeltaTime;
+			} else if(state == BallState.free){
+				FreeBallinLogic();
+				this.transform.position += vel * Time.fixedDeltaTime;
+			}
 		} else if(state == BallState.thrown || state == BallState.powered ){
 			this.transform.position += vel * throwSpeedMult * Time.fixedDeltaTime;
 		} else if(state == BallState.free){
 			FreeBallinLogic();
 			this.transform.position += vel * Time.fixedDeltaTime;
-		} else if(state == BallState.rest){
-			
+		} else if(state == BallState.held){
+			shadow.renderer.enabled = false;
+			Vector3 pos = holder.transform.position;
+			if (holder.facing == PlayerFacing.west || holder.facing == PlayerFacing.northWest || holder.facing == PlayerFacing.southWest) {
+				pos.x -= heldOffsetX;
+			} else {
+				pos.x += heldOffsetX;
+			}
+			pos.y += holder.height * 0.2f + 0.5f;
+			transform.position = pos;
+			height = 0f;
 		}
 		
 		// Block for things that should always happen
@@ -97,16 +117,6 @@ public class Ball : MonoBehaviour {
 				} else {
 					VerticalSurfaceBounce(other);
 				}
-				
-				//				foreach(Player p in GameEngine.team1) {
-				//					if (pOther.GetInstanceID() == p.GetInstanceID()) {
-				//						if (p.aState.state == ActionStates.catching) {
-				//							// Caught
-				//						} else {
-				//							
-				//						}
-				//					}
-				//				}
 			} else if(othersLayer == 11){
 				VerticalSurfaceBounce(other);
 			}
@@ -129,12 +139,15 @@ public class Ball : MonoBehaviour {
 			} else {
 				VerticalSurfaceBounce(other);
 			}
+		} else if (state == BallState.free){
+			if(pOther){
+				if(pOther.aState.state == ActionStates.catching){
+					StateHeld(pOther);
+				}
+			} else {
+				VerticalSurfaceBounce(other);
+			}
 		}
-		//		else if(other.gameObject.layer == 11){ // If other is on the 'OutfieldBoundary' layer
-		//			//TEMP
-		//			vel = Vector3.zero;
-		//			state = BallState.free;
-		//		}
 	}
 	
 	void OnTriggerStay(Collider other){
@@ -158,19 +171,6 @@ public class Ball : MonoBehaviour {
 		holder.aState.state = ActionStates.holding;
 		GameEngine.ChangeControl(holder.tag);
 		
-		//		if (holder.facing == PlayerFacing.east) {
-		//			pos.x += 0.7f;
-		//		} else if (holder.facing == PlayerFacing.west) {
-		//			pos.x -= 0.7f;
-		//		}
-		//		this.transform.position = pos;
-		
-		//Set ball height and position for being held
-		Vector3 pos = new Vector3(heldHeight, 0, 0); // Position of ball relative to holder
-		this.transform.parent = holder.transform;
-		height = 1.3f;
-		this.transform.localPosition = pos;
-		
 		//Set ball state, velocity to zero, and turn off the collider while being held
 		state = BallState.held;
 		vel = Vector3.zero;
@@ -180,38 +180,53 @@ public class Ball : MonoBehaviour {
 	public void PassTo(Player target){
 		// release ball from holder and enable collider
 		this.collider.enabled = true;
-		transform.parent = null;
-		//Vector3 scale = new Vector3(1f,1f,1f);
-		//transform.localScale = scale;
-		
-		//catcher = target;
-		
+
 		//Create a normalized vector to the target with 0 z component
 		Vector3 vecToTarg = target.transform.position - transform.position;
 		vecToTarg.z = 0f;
 		vel = vecToTarg.normalized;
 		state = BallState.pass;
 		
-		//Set trajectory calculation info
-		if( target.fieldPosition == 1){
-			trajectory = Trajectory.low;  
-		} else if( target.fieldPosition == 2){
-			// TODO add full pass logic
+		//Set trajectetory calculation info
+		if(holder.fieldPosition == 1){
+			if(target.fieldPosition == 4){
+				trajectory = Trajectory.EastWestHigh;
+			} else if (target.fieldPosition == 3 || target.fieldPosition == 2){
+				trajectory = Trajectory.mid;
+			} else if (target.fieldPosition == 1){
+				trajectory = Trajectory.low;
+			} else {
+				print ("Pass Logic Error");
+			}
+		} else if( holder.fieldPosition == 2 || holder.fieldPosition == 2){
+			if(target.fieldPosition == 4){
+				trajectory = Trajectory.low;
+			} else if (target.fieldPosition == 3 || target.fieldPosition == 2){
+				trajectory = Trajectory.NorthSouthHigh;
+			} else if (target.fieldPosition == 1){
+				trajectory = Trajectory.mid;
+			} else {
+				print ("Pass Logic Error");
+			}
+		} else if( holder.fieldPosition == 4){
+			if(target.fieldPosition == 3 || target.fieldPosition == 3){
+				trajectory = Trajectory.low;	
+			} else if (target.fieldPosition == 1){
+				trajectory = Trajectory.EastWestHigh;
+			} else {
+				print ("Pass Logic Error");
+			}
 		}
+
 		passOrigin = this.transform.position;
-		//Vector3 originTemp = this.transform.position;
-		//passOrigin = originTemp - vel * 0.5f; // Set Origin to 'multiplier' units behind passer
-		
-		totalTrajDist = Mathf.Max(vecToTarg.magnitude - 0.5f, 0.2f);
-		//totalTrajDist = toTarg.magnitude;
+		totalTrajDist = Mathf.Max(vecToTarg.magnitude - 0.8f, 0.2f);
 		
 		//Change holder info 
 		holder.aState.state = ActionStates.passing;
 		holder.aState.startTime = Time.time;
 		StartCoroutine(holder.TempNoCollide(0.2f)); // Prevent holder from hitting self
 		holder = null;
-		
-		
+			
 		//determine time for ball to get to target
 		float distToTarg = ((Vector2)this.transform.position - (Vector2)target.transform.position).magnitude;
 		float timeToTarg = distToTarg / ((vel *  passSpeedMult).magnitude);
@@ -319,6 +334,10 @@ public class Ball : MonoBehaviour {
 			height = maxHeight * percentOfMax + heldHeight;
 		} else {
 			print ("Error in PassTrajectoryLogic()");
+		}
+
+		if(height <= 0){
+			state = BallState.free;
 		}
 	}
 	

@@ -9,31 +9,33 @@ public class GameEngine : MonoBehaviour {
 		public float	lastPlayerChangeTime = 0f;
 		public float	lastLeftKeyPress = -1f;
 		public float	lastRightKeyPress = -1f;
+		
+		// These were put in the class scope so that we could change them in the Update()
+		// then apply them in FixedUpdate(). This fixes a problem I was having with the controls
+		// not responding everyframe.
+		
+		public bool a = false;
+		public bool b = false;
+		public float lastAPress = -1f;
+		public float lastBPress = -1f;
+		
+		public float h = 0f;
+		public float y = 0f;
 	}
 	
 	public static List<Player>	team1;
 	public static List<Player> 	team2;
-
+	
 	public static Controller 	player1 = new Controller();
 	public static Controller	player2 = new Controller();
 	
 	public static Ball			ball;
 	public static Sideline      sideline;
-
+	
 	public static float			gravity = -0.9f;
 
-	// These were put in the class scope so that we could change them in the Update()
-	// then apply them in FixedUpdate(). This fixes a problem I was having with the controls
-	// not responding everyframe. Perhaps these could be moved to the 'Controller' class?
-	private float h1 = 0.0f;
-	private float y1 = 0.0f;
-	private bool b1 = false;
-	private bool a1 = false;
-	private float h2 = 0.0f;
-	private float y2 = 0.0f;
-	private bool b2 = false;
-	private bool a2 = false;
-	
+
+
 	// Use this for initialization
 	void Awake () {
 		team1 = new List<Player>();
@@ -41,69 +43,98 @@ public class GameEngine : MonoBehaviour {
 	}
 
 	void Update () {
+		if (player1.player == null) {
+			player1.player = team1[0];
+			player1.lastPlayerChangeTime = Time.time;
+		}
+		if (player2.player == null) {
+			player2.player = team2[0];
+			player2.lastPlayerChangeTime = Time.time;
+		}
+		
 		//// Player 1 double tap detection
 		// left
-		if(Input.GetKeyDown("a")) {
-			if (Time.time - player1.lastLeftKeyPress < 0.2f) {
-				player1.player.kState.state = KineticStates.run;
+		if (player1.player.kState.state == KineticStates.walk || player1.player.kState.state == KineticStates.run) {
+			if(Input.GetKeyDown("a")) {
+				if (Time.time - player1.lastLeftKeyPress < 0.2f) {
+					player1.player.kState.state = KineticStates.run;
+				}
+				player1.lastLeftKeyPress = Time.time;
 			}
-			player1.lastLeftKeyPress = Time.time;
-		}
-		if (Input.GetKeyUp("a")) {
-			player1.player.kState.state = KineticStates.walk;
-		}
-		// right
-		if(Input.GetKeyDown("d")) {
-			if (Time.time - player1.lastRightKeyPress < 0.2f) {
-				player1.player.kState.state = KineticStates.run;
+			if (Input.GetKeyUp("a")) {
+				player1.player.kState.state = KineticStates.walk;
 			}
-			player1.lastRightKeyPress = Time.time;
+			// right
+			if(Input.GetKeyDown("d")) {
+				if (Time.time - player1.lastRightKeyPress < 0.2f) {
+					player1.player.kState.state = KineticStates.run;
+				}
+				player1.lastRightKeyPress = Time.time;
+			}
+			if (Input.GetKeyUp("d")) {
+				player1.player.kState.state = KineticStates.walk;
+			}
 		}
-		if (Input.GetKeyUp("d")) {
-			player1.player.kState.state = KineticStates.walk;
-		}
-
+		
 		//// Player 2 double tap detection
 		// left
-		if(Input.GetKeyDown("left")) {
-			if (Time.time - player2.lastLeftKeyPress < 0.2f) {
-				player2.player.kState.state = KineticStates.run;
+		if (player1.player.kState.state == KineticStates.walk || player1.player.kState.state == KineticStates.run) {
+			if(Input.GetKeyDown("left")) {
+				if (Time.time - player2.lastLeftKeyPress < 0.2f) {
+					player2.player.kState.state = KineticStates.run;
+				}
+				player2.lastLeftKeyPress = Time.time;
 			}
-			player2.lastLeftKeyPress = Time.time;
-		}
-		if (Input.GetKeyUp("left")) {
-			player2.player.kState.state = KineticStates.walk;
-		}
-		// right
-		if(Input.GetKeyDown("right")) {
-			if (Time.time - player2.lastRightKeyPress < 0.2f) {
-				player2.player.kState.state = KineticStates.run;
+			if (Input.GetKeyUp("left")) {
+				player2.player.kState.state = KineticStates.walk;
 			}
-			player2.lastRightKeyPress = Time.time;
+			// right
+			if(Input.GetKeyDown("right")) {
+				if (Time.time - player2.lastRightKeyPress < 0.2f) {
+					player2.player.kState.state = KineticStates.run;
+				}
+				player2.lastRightKeyPress = Time.time;
+			}
+			if (Input.GetKeyUp("right")) {
+				player2.player.kState.state = KineticStates.walk;
+			}
 		}
-		if (Input.GetKeyUp("right")) {
-			player2.player.kState.state = KineticStates.walk;
-		}
-
+		
 		//Controls
-		h1 = Input.GetAxisRaw("Horizontal");
-		y1 = Input.GetAxisRaw("Vertical");
+		player1.h = Input.GetAxisRaw("Horizontal");
+		player1.y = Input.GetAxisRaw("Vertical");
 		if( Input.GetKeyDown (KeyCode.X) ){
-			b1 = true;
+			player1.b = true;
+			player1.lastBPress = Time.time;
+			if (Input.GetKey (KeyCode.Comma) && (Time.time - player1.lastAPress) < 0.01f) {
+				player1.a = true;
+			}
 		}
 		if( Input.GetKeyDown (KeyCode.Z) ){
-			a1 = true;
+			player1.a = true;
+			player1.lastAPress = Time.time;
+			if (Input.GetKey(KeyCode.Period) && (Time.time - player1.lastBPress) < 0.01f) {
+				player1.b = true;
+			}
 		}
-
-		h2 = Input.GetAxisRaw("Horizontal2");
-		y2 = Input.GetAxisRaw("Vertical2");
+		
+		player2.h = Input.GetAxisRaw("Horizontal2");
+		player2.y = Input.GetAxisRaw("Vertical2");
 		if( Input.GetKeyDown (KeyCode.Period) ){
-			b2 = true;
+			player2.b = true;
+			player2.lastBPress = Time.time;
+			if (Input.GetKey (KeyCode.Comma) && (Time.time - player2.lastAPress) < 0.01f) {
+				player2.a = true;
+			}
 		}
 		if( Input.GetKeyDown (KeyCode.Comma) ){
-			a2 = true;
+			player2.a = true;
+			player2.lastAPress = Time.time;
+			if (Input.GetKey(KeyCode.Period) && (Time.time - player2.lastBPress) < 0.01f) {
+				player2.b = true;
+			}
 		}
-
+		
 	}
 	
 	// Update is called once per frame
@@ -113,23 +144,25 @@ public class GameEngine : MonoBehaviour {
 			player1.player = team1[0];
 			player1.lastPlayerChangeTime = Time.time;
 		}
-
+		
 		foreach(Player p in team1) {
-			if (player1.player.kState.state == KineticStates.run) break;
+			if (player1.player.kState.state != KineticStates.walk) break;
+			if (player1.player.aState.state != ActionStates.none) break;
 			// Calculate distance between ball and player
 			float deltaA = Vector3.Distance(p.transform.position, ball.transform.position);
 			float deltaB = Vector3.Distance(player1.player.transform.position, ball.transform.position);
-
+			
 			if (deltaA + 1f < deltaB && Time.time - player1.lastPlayerChangeTime > 4f) {
 				player1.player = p;
 				player1.lastPlayerChangeTime = Time.time;
 			}
 		}
-
+		
 		// Controls
-		if (b1 && a1) {
+		if (player1.b && player1.a) {
 			// Jump
-		} else if (a1) {
+			player1.player.Jump (player1.h);
+		} else if (player1.a) {
 			// Pickup or pass
 			if (player1.player.aState.state == ActionStates.holding) {
 				// Pass
@@ -148,7 +181,7 @@ public class GameEngine : MonoBehaviour {
 			} else {
 				player1.player.PickupBall();
 			}
-		} else if (b1) {
+		} else if (player1.b) {
 			// Pickup or throw
 			if (player1.player.aState.state == ActionStates.holding) {
 				// Throw
@@ -167,12 +200,12 @@ public class GameEngine : MonoBehaviour {
 				player1.player.AttemptCatchAtTime(Time.time);
 			}
 		} else {
-			player1.player.Movement(h1, y1);
+			player1.player.Movement(player1.h, player1.y);
 		}
-
-		a1 = false;
-		b1 = false;
-
+		
+		player1.a = false;
+		player1.b = false;
+		
 		//// Handle Player 2
 		if (player2.player == null) {
 			player2.player = team2[0];
@@ -180,8 +213,8 @@ public class GameEngine : MonoBehaviour {
 		}
 		
 		foreach(Player p in team2) {
-			if (player2.player.kState.state == KineticStates.run) break;
-			if (player2.player.aState.state == ActionStates.passing) break;
+			if (player2.player.kState.state != KineticStates.walk) break;
+			if (player2.player.aState.state != ActionStates.none) break;
 			// Calculate distance between ball and player
 			float deltaA = Vector3.Distance(p.transform.position, ball.transform.position);
 			float deltaB = Vector3.Distance(player2.player.transform.position, ball.transform.position);
@@ -193,9 +226,10 @@ public class GameEngine : MonoBehaviour {
 		}
 		
 		// Controls
-		if (b2 && a2) {
+		if (player2.a && player2.b) {
 			// Jump
-		} else if (a2) {
+			player2.player.Jump(player2.h);
+		} else if (player2.a) {
 			// Pickup or pass
 			if (player2.player.aState.state == ActionStates.holding) {
 				// Pass
@@ -214,7 +248,7 @@ public class GameEngine : MonoBehaviour {
 			} else {
 				player2.player.PickupBall();
 			}
-		} else if (b2) {
+		} else if (player2.b) {
 			// Pickup or throw
 			if (player2.player.aState.state == ActionStates.holding) {
 				// Throw
@@ -233,13 +267,12 @@ public class GameEngine : MonoBehaviour {
 				player2.player.AttemptCatchAtTime(Time.time);
 			}
 		} else {
-			player2.player.Movement(h2, y2);
+			player2.player.Movement(player2.h, player2.y);
 		}
-
-		a2 = false;
-		b2 = false;
+		
+		player2.a = false;
+		player2.b = false;
 	}
-
 	public static void ChangeControl(string tag) {
 		if (tag == "Team1") {
 			foreach(Player p in team1) {
