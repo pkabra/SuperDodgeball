@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public enum BallState { rest, free, held, pass, thrown, powered };
+public enum BallState { rest, free, held, pass, thrown, powered, superpowered };
 public enum Trajectory { none, low, mid, EastWestHigh, NorthSouthHigh };
 
 public class Ball : MonoBehaviour {
@@ -24,7 +24,6 @@ public class Ball : MonoBehaviour {
 	public float YCompOfZ = 0.5f; // The Y component of the Height axis, NOT the worldspace Z
 	public float trajMult = 1.0f;
 	public float maxHeight = 0.0f; // Max height of a trajectory
-	public float heightHitbox = 1.6f; // The hitbox of the ball extends this amount up and down on height axis
 	
 	public float heldOffsetX = 0.5f;
 	private float heldHeight = 1.3f;
@@ -109,7 +108,7 @@ public class Ball : MonoBehaviour {
 		if(state == BallState.pass){
 			if(othersLayer == 9){ // If other is on the 'Players' layer
 				float heightDifference = height - pOther.height; // 
-				if((heightDifference > heightHitbox) || (heightDifference < (heightHitbox * -1f)))
+				if((heightDifference > pOther.heightHitbox) || heightDifference < 0f)
 				{
 					return; // Do nothing because the ball went over or under the player
 				}else if(pOther.aState.state == ActionStates.catching){
@@ -127,7 +126,7 @@ public class Ball : MonoBehaviour {
 				   (throwerTeam == 2 && pOther.CompareTag("Team2"))){
 					return; // Do not hit own player with thrown ball
 				}
-				if((heightDifference > heightHitbox) || (heightDifference < (heightHitbox * -1f)))
+				if((heightDifference > pOther.heightHitbox) || heightDifference < 0f)
 				{
 					return; // Do nothing because the ball went over or under the player
 				} else if(pOther.aState.state == ActionStates.catching){

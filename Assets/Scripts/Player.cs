@@ -18,10 +18,12 @@ public class KineticState {
 public class Player : MonoBehaviour {
 	public Vector3 pos0 = Vector3.zero; // previous frame position
 	public Vector3 vel = Vector3.zero;
-	public int hp = 40;
+	public float hp = 48f;
 	public float height = 0.0f; // height above ground plane
 	public float heightVel = 0f;
+	public float heightHitbox = 4f;
 	public float bounciness = 0.85f;
+
 	public KineticState kState = new KineticState();
 	public ActionState aState = new ActionState();
 	public PlayerFacing facing = PlayerFacing.east;
@@ -70,6 +72,7 @@ public class Player : MonoBehaviour {
 		aniStateID = Animator.StringToHash("state");
 
 		//fieldPosition = 1; //TODO assign all positions
+		GameEngine.passTarget = this;
 	}
 
 	public void StateThrowing(){
@@ -157,23 +160,31 @@ public class Player : MonoBehaviour {
 		transform.position = pos1;
 		transform.rotation = rot;
 	}
-
-	// Handle Player Picking up Ball
-	// Edited to account for height -Steve
+	
 	public void PickupBall() {
 		Ball theBall = GameEngine.ball;
 		float heightDifference = theBall.height - this.height; 
 		float delta = Vector3.Distance(transform.position, theBall.transform.position);
-
-		if (delta < 1f && ((heightDifference <= theBall.heightHitbox) && (heightDifference >= (theBall.heightHitbox * -1f)))) {
+		
+		Crouch();
+		
+		if (delta < 0.5f && ((heightDifference <= heightHitbox) && heightDifference >= 0f)) {
 			theBall.StateHeld (this);
 		}
-
+	}
+	
+	public void Crouch() {
+		kState.state = KineticStates.crouch;
+		kState.startTime = Time.time;
+		heightHitbox = 0.5f;
+	}
+	
+	public void StandUp() {
 		kState.state = KineticStates.walk;
 		kState.startTime = Time.time;
-
+		heightHitbox = 1.6f;
 	}
-
+	
 	public void AttemptCatchAtTime(float catchTime){
 		tryCatchTime = catchTime;
 		//print (tryCatchTime);
@@ -198,7 +209,7 @@ public class Player : MonoBehaviour {
 			print (jumpVelY);
 			if (jumpVelY < 5f && jumpVelY > -5f) {
 				throwVel = 1.5f;
-				GameEngine.ball.state = BallState.powered;
+				GameEngine.ball.state = BallState.superpowered;
 			} else {
 				throwVel = 1f;
 				GameEngine.ball.state = BallState.thrown;
@@ -246,7 +257,23 @@ public class Player : MonoBehaviour {
 
 	public void PlayerHit(Ball other) {
 		kState.state = KineticStates.fall;
-
+		
+		float damage = Mathf.Ceil(Random.value * 8);
+		if (other.state == BallState.superpowered) {
+			damage += 14f;
+		} else if (other.state == BallState.powered) {
+			damage += 10f;
+		}
+		
+		hp -= damage >= hp ? hp : damage;
+		
+		//		ChangeHealth();
+		
+		if (hp <= 0f) {
+			//			PlayerKilled();
+			return;
+		}
+		
 		// Just take the velocity the ball was moving in and multiply by 3
 		// We know the ball velocity will be constant
 		// Will need to add a clause for power shots
@@ -271,6 +298,12 @@ public class Player : MonoBehaviour {
 				PassTargetingLogicTeam1();
 			} else {
 				PassTargetingLogicTeam2();
+			}
+		}
+
+		if (kState.state == KineticStates.crouch) {
+			if (Time.time - kState.startTime > 0.35f) {
+				StandUp();
 			}
 		}
 	

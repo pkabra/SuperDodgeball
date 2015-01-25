@@ -41,6 +41,8 @@ public class GameEngine : MonoBehaviour {
 	
 	public static float			gravity = -0.9f;
 
+	//private int temp = 0; // used for printing only once per second in some places
+
 
 
 	// Use this for initialization
@@ -146,6 +148,10 @@ public class GameEngine : MonoBehaviour {
 	
 	// Update is called once per frame
 	void FixedUpdate () {
+//		if(temp % 20 == 1){
+//			print (passTarget.fieldPosition);
+//		}
+//		++temp;
 		//// Handle Player 1
 		if (player1.player == null) {
 			player1.player = team1[0];
@@ -186,7 +192,11 @@ public class GameEngine : MonoBehaviour {
 					player1.player.PickupBall();
 				}
 			} else {
-				player1.player.PickupBall();
+				if (ball.state == BallState.rest || ball.state == BallState.free) {
+					player1.player.PickupBall();
+				} else {
+					player1.player.Crouch();
+				}
 			}
 		} else if (player1.b) {
 			// Pickup or throw
@@ -205,7 +215,11 @@ public class GameEngine : MonoBehaviour {
 				ball.ThrowToPos(targPos, throwVel1);
 			} else {
 				// Pickup
-				player1.player.AttemptCatchAtTime(Time.time);
+				if (ball.state == BallState.thrown || ball.state == BallState.pass) {
+					player1.player.AttemptCatchAtTime(Time.time);
+				} else {
+					player1.player.PickupBall();
+				}
 			}
 		} else {
 			player1.player.Movement(player1.h, player1.y);
@@ -254,7 +268,11 @@ public class GameEngine : MonoBehaviour {
 					player2.player.PickupBall();
 				}
 			} else {
-				player2.player.PickupBall();
+				if (ball.state == BallState.rest || ball.state == BallState.free) {
+					player2.player.PickupBall();
+				} else {
+					player2.player.Crouch();
+				}
 			}
 		} else if (player2.b) {
 			// Pickup or throw
@@ -273,7 +291,11 @@ public class GameEngine : MonoBehaviour {
 				ball.ThrowToPos(targPos, throwVel2);
 			} else {
 				// Pickup
-				player2.player.AttemptCatchAtTime(Time.time);
+				if (ball.state == BallState.thrown || ball.state == BallState.pass) {
+					player2.player.AttemptCatchAtTime(Time.time);
+				} else {
+					player2.player.PickupBall();
+				}
 			}
 		} else {
 			player2.player.Movement(player2.h, player2.y);
