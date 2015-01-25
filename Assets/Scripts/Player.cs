@@ -266,8 +266,12 @@ public class Player : MonoBehaviour {
 			JumpLogic();
 		}
 
-		if (this.aState.state = ActionStates.holding) {
-
+		if (this.aState.state == ActionStates.holding) {
+			if(this.CompareTag("Team1")){
+				PassTargetingLogicTeam1();
+			} else {
+				PassTargetingLogicTeam2();
+			}
 		}
 	
 		// Block for things that should always happen
@@ -510,11 +514,77 @@ public class Player : MonoBehaviour {
 				// pass target is closest player on team 1
 			}
 		} else if(this.fieldPosition == 2){
-			
+			if(this.facing == PlayerFacing.east){
+				GameEngine.passTarget = GameEngine.team1pos4;
+			} else if(this.facing == PlayerFacing.southEast || this.facing == PlayerFacing.southWest){
+				GameEngine.passTarget = GameEngine.team1pos3;
+			} else if(this.facing == PlayerFacing.west){
+				// pass target is closest player on team 1
+				//GameEngine.passTarget = 
+			}
 		} else if(this.fieldPosition == 3){
-			
+			if(this.facing == PlayerFacing.east){
+				GameEngine.passTarget = GameEngine.team1pos4;
+			} else if(this.facing == PlayerFacing.northEast || this.facing == PlayerFacing.northWest){
+				GameEngine.passTarget = GameEngine.team1pos2;
+			} else if(this.facing == PlayerFacing.west){
+				// pass target is closest player on team 1 
+			} else {
+				print ("Error in pass target logic");
+			}
 		} else if(this.fieldPosition == 4){
-			
+			if(this.facing == PlayerFacing.northWest){
+				GameEngine.passTarget = GameEngine.team1pos2;
+			} else if(this.facing == PlayerFacing.southWest){
+				GameEngine.passTarget = GameEngine.team1pos3;
+			} else if(this.facing == PlayerFacing.west){
+				// pass target is closest player on team 1
+			}
+		}
+	}
+
+	void PassTargetingLogicTeam2(){
+		if(this.fieldPosition == 1 ){
+			if(this.facing == PlayerFacing.west){
+				GameEngine.passTarget = GameEngine.team2pos4;
+			} else if(this.facing == PlayerFacing.northWest){
+				GameEngine.passTarget = GameEngine.team2pos2;
+			} else if(this.facing == PlayerFacing.southWest){
+				GameEngine.passTarget = GameEngine.team2pos3;
+			} else {
+				// pass target is closest player on team 1
+			}
+		} else if(this.fieldPosition == 2){
+			if(this.facing == PlayerFacing.west){
+				GameEngine.passTarget = GameEngine.team2pos4;
+			} else if(this.facing == PlayerFacing.southEast || this.facing == PlayerFacing.southWest){
+				GameEngine.passTarget = GameEngine.team2pos3;
+			} else if(this.facing == PlayerFacing.east){
+				// pass target is closest player on team 1
+				//GameEngine.passTarget = 
+			} else {
+				print ("Error in pass target logic team2 pos2");
+			}
+		} else if(this.fieldPosition == 3){
+			if(this.facing == PlayerFacing.west){
+				GameEngine.passTarget = GameEngine.team2pos4;
+			} else if(this.facing == PlayerFacing.northEast || this.facing == PlayerFacing.northWest){
+				GameEngine.passTarget = GameEngine.team2pos2;
+			} else if(this.facing == PlayerFacing.east){
+				// pass target is closest player on team 1 
+			} else {
+				print ("Error in pass target logic team2 pos3");
+			}
+		} else if(this.fieldPosition == 4){
+			if(this.facing == PlayerFacing.northEast){
+				GameEngine.passTarget = GameEngine.team2pos2;
+			} else if(this.facing == PlayerFacing.southEast){
+				GameEngine.passTarget = GameEngine.team2pos3;
+			} else if(this.facing == PlayerFacing.east){
+				// pass target is closest player on team 1
+			} else {
+				print ("Error in pass target logic team2 pos4");
+			}
 		}
 	}
 }

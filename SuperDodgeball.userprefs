@@ -1,15 +1,9 @@
 ﻿<Properties>
-  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="MonoDevelop.Default" />
+  <MonoDevelop.Ide.Workspace />
   <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Scripts\Player.cs">
     <Files>
-      <File FileName="SuperDodgeball.sln" Line="1" Column="1" />
-      <File FileName="Assets\Scripts\Ball.cs" Line="180" Column="20" />
-      <File FileName="Assets\Scripts\Player.cs" Line="499" Column="3" />
-      <File FileName="Assets\Scripts\GameEngine.cs" Line="40" Column="39" />
-      <File FileName="Assets\Scripts\Sideline.cs" Line="69" Column="19" />
-      <File FileName="Assets\Scripts\SuperCamera.cs" Line="1" Column="1" />
-      <File FileName="Assets\Scripts\SizePrint.cs" Line="1" Column="1" />
-      <File FileName="Assets\Scripts\InfieldPlayerBoundry.cs" Line="1" Column="1" />
+      <File FileName="Assets\Scripts\Player.cs" Line="273" Column="31" />
+      <File FileName="Assets\Scripts\GameEngine.cs" Line="34" Column="41" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>

@@ -31,6 +31,13 @@ public class GameEngine : MonoBehaviour {
 	
 	public static Ball			ball;
 	public static Sideline      sideline;
+	public static Player        passTarget;
+	public static Player        team1pos2;
+	public static Player        team1pos3;
+	public static Player        team1pos4;
+	public static Player        team2pos2;
+	public static Player        team2pos3;
+	public static Player        team2pos4;
 	
 	public static float			gravity = -0.9f;
 
