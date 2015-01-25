@@ -26,6 +26,7 @@ public class Player : MonoBehaviour {
 	public ActionState aState = new ActionState();
 	public PlayerFacing facing = PlayerFacing.east;
 	public int fieldPosition = 0;
+	public int team = 0;
 
 	public float jumpVelX = 0f;
 	public float jumpVelY = 0f;
@@ -44,15 +45,31 @@ public class Player : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
 		if (CompareTag("Team1")) {
-			GameEngine.team1.Add(this);
+			if(fieldPosition == 1){
+				GameEngine.team1.Add(this);
+			} else if(fieldPosition == 2){
+				GameEngine.team1pos2 = this;
+			} else if(fieldPosition == 3){
+				GameEngine.team1pos3 = this;
+			} else if(fieldPosition == 4){
+				GameEngine.team1pos4 = this;
+			}
 		} else {
-			GameEngine.team2.Add(this);
+			if(fieldPosition == 1){
+				GameEngine.team2.Add(this);
+			} else if(fieldPosition == 2){
+				GameEngine.team2pos2 = this;
+			} else if(fieldPosition == 3){
+				GameEngine.team2pos3 = this;
+			} else if(fieldPosition == 4){
+				GameEngine.team2pos4 = this;
+			}
 		}
 		spriteHolderTrans = this.transform.FindChild("SpriteHolder");
 		animator = this.gameObject.GetComponentInChildren<Animator>();
 		aniStateID = Animator.StringToHash("state");
 
-		fieldPosition = 1; //TODO assign all positions
+		//fieldPosition = 1; //TODO assign all positions
 	}
 
 	public void StateThrowing(){
@@ -247,6 +264,10 @@ public class Player : MonoBehaviour {
 		
 		if (this.kState.state == KineticStates.jump || this.kState.state == KineticStates.runjump) {
 			JumpLogic();
+		}
+
+		if (this.aState.state = ActionStates.holding) {
+
 		}
 	
 		// Block for things that should always happen
@@ -474,6 +495,26 @@ public class Player : MonoBehaviour {
 				pos.y += height * 0.2f + 0.5f;
 				GameEngine.ball.transform.position = pos;
 			}
+		}
+	}
+
+	void PassTargetingLogicTeam1(){
+		if(this.fieldPosition == 1 ){
+			if(this.facing == PlayerFacing.east){
+				GameEngine.passTarget = GameEngine.team1pos4;
+			} else if(this.facing == PlayerFacing.northEast){
+				GameEngine.passTarget = GameEngine.team1pos2;
+			} else if(this.facing == PlayerFacing.southEast){
+				GameEngine.passTarget = GameEngine.team1pos3;
+			} else {
+				// pass target is closest player on team 1
+			}
+		} else if(this.fieldPosition == 2){
+			
+		} else if(this.fieldPosition == 3){
+			
+		} else if(this.fieldPosition == 4){
+			
 		}
 	}
 }
