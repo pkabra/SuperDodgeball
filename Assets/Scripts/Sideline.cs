@@ -18,13 +18,15 @@ public class Sideline : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
 
-		this.pointOnLeft.x = -10.8f;
-		this.pointOnLeft.y = -6.07f;
-		this.pointOnRight.x = 10.8f;
-		this.pointOnRight.y = -6.07f;
+		this.pointOnLeft.x = -10.71f;
+		this.pointOnLeft.y = -3.02f;
+		this.pointOnRight.x = 10.71f;
+		this.pointOnRight.y = -3.02f;
 			
-		this.slopeLeft = this.pointOnLeft.y / this.pointOnLeft.x;
-		this.slopeRight = this.pointOnRight.y / this.pointOnRight.x;
+		this.slopeLeft = (boundaryNW.transform.position.y - boundarySW.transform.position.y) / 
+						 (boundaryNW.transform.position.x - boundarySW.transform.position.x);
+		this.slopeRight = (boundaryNE.transform.position.y - boundarySE.transform.position.y) / 
+			              (boundaryNE.transform.position.x - boundarySE.transform.position.x);
 
 		GameEngine.sideline = this;
 
@@ -55,11 +57,21 @@ public class Sideline : MonoBehaviour {
 	}
 
 	public bool isBeyondTop(Vector3 pos){
-		return pos.y > -2.6f;
+		if(pos.y > 0.55f){
+			print ("I'm beyond top boundary");
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	public bool isBeyondBottom(Vector3 pos){
-		return pos.y < -2.6f;
+		if(pos.y < -3.1f){
+			print ("I'm beyond bottom boundary");
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 }

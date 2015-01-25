@@ -16,9 +16,9 @@ public class KineticState {
 }
 
 public class Player : MonoBehaviour {
-
 	public Vector3 pos0 = Vector3.zero; // previous frame position
 	public Vector3 vel = Vector3.zero;
+	public int hp = 40;
 	public float height = 0.0f; // height above ground plane
 	public float heightVel = 0f;
 	public float bounciness = 0.85f;
@@ -31,6 +31,8 @@ public class Player : MonoBehaviour {
 	public float jumpVelY = 0f;
 
 	public Transform spriteHolderTrans = null;
+	public Animator animator = null;
+	private int aniStateID = 0;
 
 	public float catchingTime = 0.8f;
 	public float catchAttemptBuffer = 0.3f;
@@ -47,7 +49,10 @@ public class Player : MonoBehaviour {
 			GameEngine.team2.Add(this);
 		}
 		spriteHolderTrans = this.transform.FindChild("SpriteHolder");
-		fieldPosition = 1;
+		animator = this.gameObject.GetComponentInChildren<Animator>();
+		aniStateID = Animator.StringToHash("state");
+
+		fieldPosition = 1; //TODO assign all positions
 	}
 
 	public void StateThrowing(){
@@ -124,6 +129,12 @@ public class Player : MonoBehaviour {
 				facing = PlayerFacing.east;			
 			}
 			rot.y = 0f;
+		}
+
+		if(pos1.y > 0.2f){
+			pos1.y = 0.2f;
+		} else if (pos1.y < -3.25f){
+			pos1.y = -3.25f;
 		}
 
 		transform.position = pos1;
@@ -237,10 +248,21 @@ public class Player : MonoBehaviour {
 		if (this.kState.state == KineticStates.jump || this.kState.state == KineticStates.runjump) {
 			JumpLogic();
 		}
-		
+	
 		// Block for things that should always happen
+		Vector3 keepInVec = Vector3.zero;
+		if(transform.position.y > 0.2f){
+			keepInVec = transform.position;
+			keepInVec.y = 0.2f;
+			transform.position = keepInVec;
+		} else if (transform.position.y < -3.25f){
+			keepInVec = transform.position;
+			keepInVec.y = -3.25f;
+			transform.position = keepInVec;
+		}
 		Vector3 heightOffset = new Vector3( 0, height * 0.5f + 1.2f, 0 );
 		spriteHolderTrans.localPosition = heightOffset;
+		animator.SetInteger(aniStateID, (int)this.aState.state);
 	}
 
 	public void Jump(float h) {

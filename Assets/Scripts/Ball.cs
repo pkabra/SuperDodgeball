@@ -287,11 +287,18 @@ public class Ball : MonoBehaviour {
 	// This function allows the ball to fall responding to 'gravity' and bounce off the ground.
 	// The ball loses velocity with each bounce relative to the 'bounciness' variable.
 	void FreeBallinLogic(){
+
 		// Put ball at rest if it is moving super slow
-		if(height < 0.05f && (heightVel < 0.1f && heightVel > -0.1f)){
+		if(height < 0.05f && (heightVel < 0.38f && heightVel > 0.33f)){
 			state = BallState.rest;
 			height = 0f;
 			heightVel = 0f;
+			if(GameEngine.sideline.isBeyondTop(this.transform.position) ||
+			   GameEngine.sideline.isBeyondBottom(this.transform.position) ||
+			   GameEngine.sideline.isBeyondLeft(this.transform.position) ||
+			   GameEngine.sideline.isBeyondRight(this.transform.position) ){
+				ResetBall();
+			}
 		} else {
 			heightVel += gravity;
 			height += heightVel * Time.fixedDeltaTime;
@@ -344,6 +351,10 @@ public class Ball : MonoBehaviour {
 		if(height <= 0){
 			state = BallState.free;
 		}
+	}
+
+	void ResetBall(){
+		this.transform.position = new Vector3(0f, -1f, -1f);
 	}
 	
 }
