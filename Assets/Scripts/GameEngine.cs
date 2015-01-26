@@ -188,12 +188,7 @@ public class GameEngine : MonoBehaviour {
 			// Pickup or pass
 			if (player1.player.aState.state == ActionStates.holding) {
 				// Pass
-				foreach(Player p in team1) {
-					if (p.aState.state != ActionStates.holding) {
-						ball.PassTo(p);
-						break;
-					}
-				}
+				ball.PassTo(passTarget);
 			} else if(player1.player.aState.state == ActionStates.passing) {
 				// Pickup
 				if (Time.time - player1.player.aState.startTime > 0.5f) {
@@ -219,8 +214,9 @@ public class GameEngine : MonoBehaviour {
 					}
 				}
 				targPos.z = -1.0f;
-				targPos.y += 0.5f;
+				//targPos.y += 0.5f;
 				float throwVel1 = player1.player.ThrowAt(targPos);
+				ball.height = player1.player.height + 1.3f;
 				ball.ThrowToPos(targPos, throwVel1);
 			} else {
 				// Pickup
@@ -268,12 +264,7 @@ public class GameEngine : MonoBehaviour {
 			// Pickup or pass
 			if (player2.player.aState.state == ActionStates.holding) {
 				// Pass
-				foreach(Player p in team2) {
-					if (p.aState.state != ActionStates.holding) {
-						ball.PassTo(p);
-						break;
-					}
-				}
+				ball.PassTo(passTarget);
 			} else if(player2.player.aState.state == ActionStates.passing) {
 				// Pickup
 				if (Time.time - player2.player.aState.startTime > 0.5f) {
@@ -299,8 +290,9 @@ public class GameEngine : MonoBehaviour {
 					}
 				}
 				targPos.z = -1.0f;
-				targPos.y += 0.5f;
+				//targPos.y += 0.5f;
 				float throwVel2 = player2.player.ThrowAt(targPos);
+				ball.height = player2.player.height * 0.5f + 1.3f;
 				ball.ThrowToPos(targPos, throwVel2);
 			} else {
 				// Pickup

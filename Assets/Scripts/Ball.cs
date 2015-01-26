@@ -2,7 +2,7 @@
 using System.Collections;
 
 public enum BallState { rest, free, held, pass, thrown, powered, superpowered };
-public enum Trajectory { none, low, mid, EastWestHigh, NorthSouthHigh };
+public enum Trajectory { none, jump, low, mid, EastWestHigh, NorthSouthHigh };
 
 public class Ball : MonoBehaviour {
 	public Vector3 vel = Vector3.zero;
@@ -34,6 +34,7 @@ public class Ball : MonoBehaviour {
 	private float bounciness = 0.85f;
 	private int throwerTeam = 0;
 	public Vector3 prevPos = Vector3.zero;
+	private Vector3 targetPos = Vector3.zero;
 
 	private GameObject shadow = null;
 	
@@ -67,6 +68,9 @@ public class Ball : MonoBehaviour {
 			}
 		} else if(state == BallState.thrown || state == BallState.powered ){
 			this.transform.position += vel * throwSpeedMult * Time.fixedDeltaTime;
+			if(trajectory == Trajectory.jump){
+				height = maxHeight * (Vector3.Distance(transform.position, targetPos) / totalTrajDist);
+			}
 		} else if(state == BallState.free){
 			FreeBallinLogic();
 			this.transform.position += vel * Time.fixedDeltaTime;
@@ -78,9 +82,9 @@ public class Ball : MonoBehaviour {
 			} else {
 				pos.x += heldOffsetX;
 			}
-			pos.y += holder.height * 0.2f + 0.5f;
+			//pos.y += holder.height * 0.2f + 0.5f;
 			transform.position = pos;
-			height = 0f;
+			//height = holder.height * 0.5f + 1.3f;
 		}
 		
 		// Block for things that should always happen
@@ -187,6 +191,7 @@ public class Ball : MonoBehaviour {
 		vecToTarg.z = 0f;
 		vel = vecToTarg.normalized;
 		state = BallState.pass;
+		height = holder.height * 0.5f + 1.3f;
 		
 		//Set trajectetory calculation info
 		if(holder.fieldPosition == 1){
@@ -240,19 +245,28 @@ public class Ball : MonoBehaviour {
 	public void ThrowToPos(Vector3 targPos, float velMult){
 		// release ball from holder and enable collider
 		this.collider.enabled = true;
+		targetPos = targPos;
 		
-		Vector3 pos = this.transform.position;
-		pos.y -= 0.5f;
-		transform.position = pos;
-		height = 1f;
-		
+		//Vector3 pos = this.transform.position;
+		//transform.position = pos;
+		//height = 1f;
+		//pos.y -= 0.5f;
+
 		// set new ball state and velocity in direction of target
 		Vector3 dir = targPos - this.transform.position;
 		dir.z = 0;
 		vel = dir.normalized * velMult;
+
+		if(holder.height > 0.001f){
+			trajectory = Trajectory.jump;
+			totalTrajDist = dir.magnitude + 0.3f;
+			maxHeight = holder.height;
+		} else {
+			trajectory = Trajectory.none;
+		}
+
 		// Player sets ball state when he throws, this done for powered shot implementation
-		//state = BallState.thrown;
-		if(holder.CompareTag("Team1")){
+		if(holder.team == 1){
 			throwerTeam = 1;
 		} else {
 			throwerTeam = 2;
@@ -294,11 +308,7 @@ public class Ball : MonoBehaviour {
 			state = BallState.rest;
 			height = 0f;
 			heightVel = 0f;
-			if(GameEngine.resetBallOn && (
-				GameEngine.sideline.isBeyondTop(this.transform.position) ||
-				GameEngine.sideline.isBeyondBottom(this.transform.position) ||
-				GameEngine.sideline.isBeyondLeft(this.transform.position) ||
-				GameEngine.sideline.isBeyondRight(this.transform.position))){
+			if(GameEngine.resetBallOn && (GameEngine.sideline.isBeyondAny(transform.position))){
 				ResetBall();
 			}
 		} else {

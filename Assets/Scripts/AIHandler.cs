@@ -11,7 +11,7 @@ public class AIHandler : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
 		player = gameObject.GetComponent<Player>();
-		print (player.team);
+		//print (player.team);
 	}
 	
 	void FixedUpdate () {
@@ -52,7 +52,7 @@ public class AIHandler : MonoBehaviour {
 		// Handle tactics for sideline players
 		Ball ball = GameEngine.ball;
 		float distance = ball.transform.position.x - player.transform.position.x;
-		print (GameEngine.sideline.isBeyondAny(ball.transform.position));
+		//print (GameEngine.sideline.isBeyondAny(ball.transform.position));
 		if (player.team == 1) {
 			if (GameEngine.sideline.isBeyondBottom(ball.transform.position)
 			    && ball.transform.position.x > 0f

@@ -24,7 +24,7 @@ public class Player : MonoBehaviour {
 	public float hp = 48f;
 	public float height = 0.0f; // height above ground plane
 	public float heightVel = 0f;
-	public float heightHitbox = 4f;
+	public float heightHitbox = 3f;
 	public float bounciness = 0.85f;
 
 	public KineticState kState = new KineticState();
@@ -219,6 +219,7 @@ public class Player : MonoBehaviour {
 	
 	public void PickupBall() {
 		Ball theBall = GameEngine.ball;
+		//float heightDifference = theBall.height - this.height + 1.3f; 
 		float heightDifference = theBall.height - this.height; 
 		float delta = Vector3.Distance(transform.position, theBall.transform.position);
 		
@@ -238,7 +239,7 @@ public class Player : MonoBehaviour {
 	public void StandUp() {
 		kState.state = KineticStates.walk;
 		kState.startTime = Time.time;
-		heightHitbox = 1.6f;
+		heightHitbox = 3.0f;
 	}
 	
 	public void AttemptCatchAtTime(float catchTime){
@@ -356,6 +357,7 @@ public class Player : MonoBehaviour {
 			} else {
 				PassTargetingLogicTeam2();
 			}
+			GameEngine.ball.height = height * 0.5f + 1.3f;
 		}
 
 		if (kState.state == KineticStates.crouch) {
@@ -684,6 +686,7 @@ public class Player : MonoBehaviour {
 		Player closest = null;
 		float shortestDist = 1000f;
 		foreach(Player p in list){
+			if(p == this) continue;
 			float testDist = Vector3.Distance(this.transform.position, p.transform.position);
 			if(testDist < shortestDist)
 			{
