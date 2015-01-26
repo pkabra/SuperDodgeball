@@ -21,6 +21,13 @@ public class GameEngine : MonoBehaviour {
 		
 		public float h = 0f;
 		public float y = 0f;
+
+		public void ChangeControlTo(Player p) {
+			if (player != null) player.AIControl = true;
+			p.AIControl = false;
+			player = p;
+			lastPlayerChangeTime = Time.time;
+		}
 	}
 	
 	public static List<Player>	team1;
@@ -41,6 +48,8 @@ public class GameEngine : MonoBehaviour {
 	
 	public static float			gravity = -0.9f;
 
+	public static bool			resetBallOn = false;
+
 	//private int temp = 0; // used for printing only once per second in some places
 
 
@@ -53,12 +62,10 @@ public class GameEngine : MonoBehaviour {
 
 	void Update () {
 		if (player1.player == null) {
-			player1.player = team1[0];
-			player1.lastPlayerChangeTime = Time.time;
+			player1.ChangeControlTo(team1[0]);
 		}
 		if (player2.player == null) {
-			player2.player = team2[0];
-			player2.lastPlayerChangeTime = Time.time;
+			player2.ChangeControlTo(team2[0]);
 		}
 		
 		//// Player 1 double tap detection
@@ -148,26 +155,28 @@ public class GameEngine : MonoBehaviour {
 	
 	// Update is called once per frame
 	void FixedUpdate () {
-//		if(temp % 20 == 1){
-//			print (passTarget.fieldPosition);
-//		}
-//		++temp;
+		//		if(temp % 20 == 1){
+		//			print (passTarget.fieldPosition);
+		//		}
+		//		++temp;
 		//// Handle Player 1
 		if (player1.player == null) {
-			player1.player = team1[0];
-			player1.lastPlayerChangeTime = Time.time;
+			player1.ChangeControlTo(team1[0]);
 		}
 		
-		foreach(Player p in team1) {
-			if (player1.player.kState.state != KineticStates.walk) break;
-			if (player1.player.aState.state != ActionStates.none) break;
-			// Calculate distance between ball and player
-			float deltaA = Vector3.Distance(p.transform.position, ball.transform.position);
-			float deltaB = Vector3.Distance(player1.player.transform.position, ball.transform.position);
-			
-			if (deltaA + 1f < deltaB && Time.time - player1.lastPlayerChangeTime > 4f) {
-				player1.player = p;
-				player1.lastPlayerChangeTime = Time.time;
+		if (ball.holder && ball.holder.team == 1) {
+			player1.ChangeControlTo(ball.holder);
+		} else {
+			foreach(Player p in team1) {
+				if (player1.player.kState.state != KineticStates.walk) break;
+				if (player1.player.aState.state != ActionStates.none) break;
+				// Calculate distance between ball and player
+				float deltaA = Vector3.Distance(p.transform.position, ball.transform.position);
+				float deltaB = Vector3.Distance(player1.player.transform.position, ball.transform.position);
+				
+				if (deltaA + 1f < deltaB && Time.time - player1.lastPlayerChangeTime > 2f) {
+					player1.ChangeControlTo(p);
+				}
 			}
 		}
 		
@@ -230,20 +239,24 @@ public class GameEngine : MonoBehaviour {
 		
 		//// Handle Player 2
 		if (player2.player == null) {
-			player2.player = team2[0];
-			player2.lastPlayerChangeTime = Time.time;
+			player2.ChangeControlTo(team2[0]);
 		}
 		
-		foreach(Player p in team2) {
-			if (player2.player.kState.state != KineticStates.walk) break;
-			if (player2.player.aState.state != ActionStates.none) break;
-			// Calculate distance between ball and player
-			float deltaA = Vector3.Distance(p.transform.position, ball.transform.position);
-			float deltaB = Vector3.Distance(player2.player.transform.position, ball.transform.position);
-			
-			if (deltaA + 1f < deltaB && Time.time - player2.lastPlayerChangeTime > 4f) {
-				player2.player = p;
-				player2.lastPlayerChangeTime = Time.time;
+		if (ball.holder && ball.holder.team == 2) {
+			if (ball.holder.GetInstanceID() != player2.player.GetInstanceID()) {
+				player2.ChangeControlTo(ball.holder);
+			}
+		} else {
+			foreach(Player p in team2) {
+				if (player2.player.kState.state != KineticStates.walk) break;
+				if (player2.player.aState.state != ActionStates.none) break;
+				// Calculate distance between ball and player
+				float deltaA = Vector3.Distance(p.transform.position, ball.transform.position);
+				float deltaB = Vector3.Distance(player2.player.transform.position, ball.transform.position);
+				
+				if (deltaA + 1f < deltaB && Time.time - player2.lastPlayerChangeTime > 2f) {
+					player2.ChangeControlTo(p);
+				}
 			}
 		}
 		
@@ -304,7 +317,6 @@ public class GameEngine : MonoBehaviour {
 		player2.a = false;
 		player2.b = false;
 	}
-
 	public static void ChangeControl(string tag) {
 		if (tag == "Team1") {
 			foreach(Player p in team1) {

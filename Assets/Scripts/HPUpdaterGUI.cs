@@ -2,13 +2,14 @@
 using System.Collections;
 
 public class HPUpdaterGUI : MonoBehaviour {
-	private Rect cover;
+	public GameObject child = null;
+	private RectTransform cover;
 
 	void Start () {
-		cover = this.GetComponentInChildren<RectTransform>().rect;
+		cover = child.GetComponentInChildren<RectTransform>();
 	}
 
 	public void UpdateCover(float hp){
-		cover.width = 180f - (15f * Mathf.Ceil(hp / 4f));
+		cover.sizeDelta = new Vector2(180f - (15f * Mathf.Ceil(hp / 4f)), 20);
 	}
 }

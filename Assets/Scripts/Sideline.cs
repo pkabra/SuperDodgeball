@@ -74,4 +74,12 @@ public class Sideline : MonoBehaviour {
 		}
 	}
 
+	public bool isBeyondAny(Vector3 pos){
+		if (isBeyondTop(pos)) return true;
+		if (isBeyondBottom(pos)) return true;
+		if (isBeyondLeft(pos)) return true;
+		if (isBeyondRight(pos)) return true;
+		return false;
+	}
+
 }

@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public enum KineticStates{none, stand, walk, run, crouch, jump ,runjump, fall, stun};
 public enum ActionStates{none, throwing, catching, passing, holding};
@@ -16,6 +17,8 @@ public class KineticState {
 }
 
 public class Player : MonoBehaviour {
+	public bool AIControl = true; // Is this player under AI control?
+
 	public Vector3 pos0 = Vector3.zero; // previous frame position
 	public Vector3 vel = Vector3.zero;
 	public float hp = 48f;
@@ -36,6 +39,8 @@ public class Player : MonoBehaviour {
 	public Transform spriteHolderTrans = null;
 	public Animator animator = null;
 	private int aniStateID = 0;
+	public GameObject HPBar = null;
+	private HPUpdaterGUI hpGui = null;
 
 	public float catchingTime = 0.8f;
 	public float catchAttemptBuffer = 0.3f;
@@ -70,6 +75,9 @@ public class Player : MonoBehaviour {
 		spriteHolderTrans = this.transform.FindChild("SpriteHolder");
 		animator = this.gameObject.GetComponentInChildren<Animator>();
 		aniStateID = Animator.StringToHash("state");
+		if(this.fieldPosition == 1){
+			hpGui = this.HPBar.GetComponentInChildren<HPUpdaterGUI>();
+		}
 
 		//fieldPosition = 1; //TODO assign all positions
 		GameEngine.passTarget = this;
@@ -79,8 +87,7 @@ public class Player : MonoBehaviour {
 		// Player just threw the ball
 		aState.state = ActionStates.throwing;
 	}
-
-	
+		
 	void OnTriggerEnter(Collider other){
 		
 		if(other.gameObject.tag == "InfieldBoundary"){
@@ -104,34 +111,40 @@ public class Player : MonoBehaviour {
 	public void Movement (float h, float v) {
 		if (kState.state != KineticStates.walk && kState.state != KineticStates.run) return;
 		if (aState.state == ActionStates.catching) return;
-		// Protection from overriding collision resolution
-		if(xLock){
-			xLock = false;
-			h = 0f;
-		}
-		if(yLock){
-			yLock = false;
-			v = 0f;
-		}
-
-		if (Time.time - kState.startTime < 0.5f || Time.time - aState.startTime < 0.5f) return;
 		
-		//Store previous position
-		pos0 = this.transform.position;
-		
-		// Movement
 		Vector3 pos1 = Vector3.zero;
-		if (kState.state == KineticStates.run) {
-			vel.x = h * 0.3f;
-			vel.y = v * 0.05f;
+		
+		if (fieldPosition != 1) {
+			pos1 = HandleSidelineMovement(h, v);
 		} else {
-			vel.x = h * 0.1f;
-			vel.y = v * 0.1f;
+			// Protection from overriding collision resolution
+			if(xLock){
+				xLock = false;
+				h = 0f;
+			}
+			if(yLock){
+				yLock = false;
+				v = 0f;
+			}
+			
+			if (Time.time - kState.startTime < 0.5f || Time.time - aState.startTime < 0.5f) return;
+			
+			//Store previous position
+			pos0 = this.transform.position;
+			
+			// Movement
+			if (kState.state == KineticStates.run) {
+				vel.x = h * 0.3f;
+				vel.y = v * 0.05f;
+			} else {
+				vel.x = h * 0.1f;
+				vel.y = v * 0.1f;
+			}
+			pos1 = pos0 + vel;
 		}
-		pos1 = pos0 + vel;
-
+		
 		Quaternion rot = transform.rotation;
-		if (h < 0f) {
+		if (h < 0f || (team == 1 && fieldPosition == 4)) {
 			if (v < 0f) {
 				facing = PlayerFacing.southWest;
 			} else if (v > 0f) {
@@ -140,7 +153,7 @@ public class Player : MonoBehaviour {
 				facing = PlayerFacing.west;
 			}
 			rot.y = 180f;
-		} else if (h > 0f) {
+		} else if (h > 0f || (team == 2 && fieldPosition == 4)) {
 			if (v < 0f) {
 				facing = PlayerFacing.southEast;
 			} else if (v > 0f) {
@@ -149,16 +162,59 @@ public class Player : MonoBehaviour {
 				facing = PlayerFacing.east;			
 			}
 			rot.y = 0f;
+		} else {
+			if (v < 0f) {
+				if (facing == PlayerFacing.east || facing == PlayerFacing.northEast) {
+					facing = PlayerFacing.southEast;
+				} else if (facing == PlayerFacing.west || facing == PlayerFacing.northWest) {
+					facing = PlayerFacing.southWest;
+				}
+			} else if (v > 0f) {
+				if (facing == PlayerFacing.east || facing == PlayerFacing.southEast) {
+					facing = PlayerFacing.northEast;
+				} else if (facing == PlayerFacing.west || facing == PlayerFacing.southWest) {
+					facing = PlayerFacing.northWest;
+				}
+			}
 		}
-
-		if(pos1.y > 0.2f){
-			pos1.y = 0.2f;
-		} else if (pos1.y < -3.25f){
-			pos1.y = -3.25f;
+		
+		if (fieldPosition == 1) {
+			if(pos1.y > 0.2f){
+				pos1.y = 0.2f;
+			} else if (pos1.y < -3.25f){
+				pos1.y = -3.25f;
+			}
 		}
-
+		
 		transform.position = pos1;
 		transform.rotation = rot;
+	}
+	
+	public Vector3 HandleSidelineMovement(float h, float v) {
+		Vector3 pos = transform.position;
+		if (fieldPosition < 4) {
+			pos.x += h * 0.1f;
+			if (team == 1) {
+				if (pos.x > 9f || pos.x < 0f) {
+					pos = transform.position;
+				}
+			} else {
+				if (pos.x < -9f || pos.x > 0f) {
+					pos = transform.position;
+				}
+			}
+		} else {
+			float slope = GameEngine.sideline.slopeRight;
+			if (team == 2) {
+				slope = GameEngine.sideline.slopeLeft;
+			}
+			pos.y += v * 0.1f;
+			pos.x += v * 0.1f/slope;
+			if (pos.y > 0.2f || pos.y < -3.25f) {
+				pos = transform.position;
+			}
+		}
+		return pos;
 	}
 	
 	public void PickupBall() {
@@ -266,8 +322,9 @@ public class Player : MonoBehaviour {
 		}
 		
 		hp -= damage >= hp ? hp : damage;
-		
-		//		ChangeHealth();
+
+		print("UpdateCOver Called");
+		hpGui.UpdateCover(hp);
 		
 		if (hp <= 0f) {
 			//			PlayerKilled();
@@ -309,14 +366,17 @@ public class Player : MonoBehaviour {
 	
 		// Block for things that should always happen
 		Vector3 keepInVec = Vector3.zero;
-		if(transform.position.y > 0.2f){
-			keepInVec = transform.position;
-			keepInVec.y = 0.2f;
-			transform.position = keepInVec;
-		} else if (transform.position.y < -3.25f){
-			keepInVec = transform.position;
-			keepInVec.y = -3.25f;
-			transform.position = keepInVec;
+		if(this.fieldPosition == 1)
+			{
+			if(transform.position.y > 0.2f){
+				keepInVec = transform.position;
+				keepInVec.y = 0.2f;
+				transform.position = keepInVec;
+			} else if (transform.position.y < -3.25f){
+				keepInVec = transform.position;
+				keepInVec.y = -3.25f;
+				transform.position = keepInVec;
+			}
 		}
 		Vector3 heightOffset = new Vector3( 0, height * 0.5f + 1.2f, 0 );
 		spriteHolderTrans.localPosition = heightOffset;
@@ -544,7 +604,7 @@ public class Player : MonoBehaviour {
 			} else if(this.facing == PlayerFacing.southEast){
 				GameEngine.passTarget = GameEngine.team1pos3;
 			} else {
-				// pass target is closest player on team 1
+				PickClosestPos1Teammate(GameEngine.team1);
 			}
 		} else if(this.fieldPosition == 2){
 			if(this.facing == PlayerFacing.east){
@@ -552,8 +612,7 @@ public class Player : MonoBehaviour {
 			} else if(this.facing == PlayerFacing.southEast || this.facing == PlayerFacing.southWest){
 				GameEngine.passTarget = GameEngine.team1pos3;
 			} else if(this.facing == PlayerFacing.west){
-				// pass target is closest player on team 1
-				//GameEngine.passTarget = 
+				PickClosestPos1Teammate(GameEngine.team1);
 			}
 		} else if(this.fieldPosition == 3){
 			if(this.facing == PlayerFacing.east){
@@ -561,7 +620,7 @@ public class Player : MonoBehaviour {
 			} else if(this.facing == PlayerFacing.northEast || this.facing == PlayerFacing.northWest){
 				GameEngine.passTarget = GameEngine.team1pos2;
 			} else if(this.facing == PlayerFacing.west){
-				// pass target is closest player on team 1 
+				PickClosestPos1Teammate(GameEngine.team1);
 			} else {
 				print ("Error in pass target logic");
 			}
@@ -571,7 +630,7 @@ public class Player : MonoBehaviour {
 			} else if(this.facing == PlayerFacing.southWest){
 				GameEngine.passTarget = GameEngine.team1pos3;
 			} else if(this.facing == PlayerFacing.west){
-				// pass target is closest player on team 1
+				PickClosestPos1Teammate(GameEngine.team1);
 			}
 		}
 	}
@@ -585,7 +644,7 @@ public class Player : MonoBehaviour {
 			} else if(this.facing == PlayerFacing.southWest){
 				GameEngine.passTarget = GameEngine.team2pos3;
 			} else {
-				// pass target is closest player on team 1
+				PickClosestPos1Teammate(GameEngine.team2);
 			}
 		} else if(this.fieldPosition == 2){
 			if(this.facing == PlayerFacing.west){
@@ -593,8 +652,7 @@ public class Player : MonoBehaviour {
 			} else if(this.facing == PlayerFacing.southEast || this.facing == PlayerFacing.southWest){
 				GameEngine.passTarget = GameEngine.team2pos3;
 			} else if(this.facing == PlayerFacing.east){
-				// pass target is closest player on team 1
-				//GameEngine.passTarget = 
+				PickClosestPos1Teammate(GameEngine.team2);
 			} else {
 				print ("Error in pass target logic team2 pos2");
 			}
@@ -604,7 +662,7 @@ public class Player : MonoBehaviour {
 			} else if(this.facing == PlayerFacing.northEast || this.facing == PlayerFacing.northWest){
 				GameEngine.passTarget = GameEngine.team2pos2;
 			} else if(this.facing == PlayerFacing.east){
-				// pass target is closest player on team 1 
+				PickClosestPos1Teammate(GameEngine.team2);
 			} else {
 				print ("Error in pass target logic team2 pos3");
 			}
@@ -614,10 +672,25 @@ public class Player : MonoBehaviour {
 			} else if(this.facing == PlayerFacing.southEast){
 				GameEngine.passTarget = GameEngine.team2pos3;
 			} else if(this.facing == PlayerFacing.east){
-				// pass target is closest player on team 1
+				PickClosestPos1Teammate(GameEngine.team2);
 			} else {
 				print ("Error in pass target logic team2 pos4");
 			}
 		}
+	}
+
+	void PickClosestPos1Teammate(List<Player> list)
+	{
+		Player closest = null;
+		float shortestDist = 1000f;
+		foreach(Player p in list){
+			float testDist = Vector3.Distance(this.transform.position, p.transform.position);
+			if(testDist < shortestDist)
+			{
+				shortestDist = testDist;
+				closest = p;
+			}
+		}
+		GameEngine.passTarget = closest;
 	}
 }

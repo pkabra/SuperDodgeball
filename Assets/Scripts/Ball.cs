@@ -132,7 +132,9 @@ public class Ball : MonoBehaviour {
 				} else if(pOther.aState.state == ActionStates.catching){
 					StateHeld(pOther);
 				} else {
-					pOther.PlayerHit(this);
+					if(pOther.fieldPosition == 1){
+						pOther.PlayerHit(this);
+					}
 					VerticalSurfaceBounce(other);
 				}
 			} else {
@@ -292,10 +294,11 @@ public class Ball : MonoBehaviour {
 			state = BallState.rest;
 			height = 0f;
 			heightVel = 0f;
-			if(GameEngine.sideline.isBeyondTop(this.transform.position) ||
-			   GameEngine.sideline.isBeyondBottom(this.transform.position) ||
-			   GameEngine.sideline.isBeyondLeft(this.transform.position) ||
-			   GameEngine.sideline.isBeyondRight(this.transform.position) ){
+			if(GameEngine.resetBallOn && (
+				GameEngine.sideline.isBeyondTop(this.transform.position) ||
+				GameEngine.sideline.isBeyondBottom(this.transform.position) ||
+				GameEngine.sideline.isBeyondLeft(this.transform.position) ||
+				GameEngine.sideline.isBeyondRight(this.transform.position))){
 				ResetBall();
 			}
 		} else {

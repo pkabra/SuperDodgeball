@@ -1,11 +1,13 @@
 ﻿<Properties>
-  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Scripts\Ball.cs">
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="MonoDevelop.Default" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Scripts\GameEngine.cs">
     <Files>
-      <File FileName="Assets\Scripts\GameEngine.cs" Line="298" Column="6" />
-      <File FileName="Assets\Scripts\Player.cs" Line="212" Column="39" />
-      <File FileName="Assets\Scripts\Ball.cs" Line="129" Column="74" />
-      <File FileName="Assets\Scripts\HPUpdaterGUI.cs" Line="12" Column="52" />
+      <File FileName="Assets\Scripts\Player.cs" Line="218" Column="3" />
+      <File FileName="Assets\Scripts\GameEngine.cs" Line="53" Column="4" />
+      <File FileName="Assets\Scripts\Ball.cs" Line="302" Column="17" />
+      <File FileName="Assets\Scripts\HPUpdaterGUI.cs" Line="9" Column="57" />
+      <File FileName="Assets\Scripts\Sideline.cs" Line="84" Column="2" />
+      <File FileName="Assets\Scripts\AIHandler.cs" Line="55" Column="30" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
