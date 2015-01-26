@@ -11,7 +11,7 @@ public class Ball : MonoBehaviour {
 	public Trajectory trajectory = Trajectory.none;
 	
 	public Player holder = null;
-	public Player catcher = null;
+	//public Player catcher = null;
 	public Transform spriteHolderTrans = null;
 	public Animator animator = null;
 	private int aniStateID = 0;
@@ -25,7 +25,7 @@ public class Ball : MonoBehaviour {
 	public float trajMult = 1.0f;
 	public float maxHeight = 0.0f; // Max height of a trajectory
 	
-	public float heldOffsetX = 0.5f;
+	public float heldOffsetX = 0.35f;
 	private float heldHeight = 1.3f;
 	private float totalTrajDist = 0.0f; // Total distance from origin to intended target
 	private Vector3 passOrigin = Vector3.zero;
@@ -67,10 +67,21 @@ public class Ball : MonoBehaviour {
 				this.transform.position += vel * Time.fixedDeltaTime;
 			}
 		} else if(state == BallState.thrown || state == BallState.powered ){
-			this.transform.position += vel * throwSpeedMult * Time.fixedDeltaTime;
 			if(trajectory == Trajectory.jump){
-				height = maxHeight * (Vector3.Distance(transform.position, targetPos) / totalTrajDist);
+				float distToTarget = Vector3.Distance(transform.position, targetPos);
+				float offset = height;
+				height = maxHeight * distToTarget / totalTrajDist;
+				heightVel = (height - offset) / Time.fixedDeltaTime;
+				if(heightVel >= 0f){
+					heightVel = 8.0f; // This is how hard the ball bounces off the ground
+					vel *= 3.5f; // This is how much velocity the ball maintains after first bounce
+					state = BallState.free;
+					//FreeBallinLogic();
+					this.transform.position += vel * bounciness * Time.fixedDeltaTime;
+					return;
+				}
 			}
+			this.transform.position += vel * throwSpeedMult * Time.fixedDeltaTime;
 		} else if(state == BallState.free){
 			FreeBallinLogic();
 			this.transform.position += vel * Time.fixedDeltaTime;
@@ -88,7 +99,7 @@ public class Ball : MonoBehaviour {
 		}
 		
 		// Block for things that should always happen
-		Vector3 heightOffset = new Vector3( 0, height * YCompOfZ, 0 );
+		Vector3 heightOffset = new Vector3( 0, height * YCompOfZ, (transform.position.y - 0.2f) * 0.001f);
 		spriteHolderTrans.localPosition = heightOffset;
 		animator.SetInteger(aniStateID, (int)this.state);
 		
@@ -111,21 +122,21 @@ public class Ball : MonoBehaviour {
 
 		if(state == BallState.pass){
 			if(othersLayer == 9){ // If other is on the 'Players' layer
-				float heightDifference = height - pOther.height; // 
+				float heightDifference = height - pOther.height + heldHeight; // 
 				if((heightDifference > pOther.heightHitbox) || heightDifference < 0f)
 				{
 					return; // Do nothing because the ball went over or under the player
-				}else if(pOther.aState.state == ActionStates.catching){
+				}else if(pOther.aState.state == ActionStates.catching && pOther.isFacingBall()){
 					StateHeld(pOther);
 				} else {
-					VerticalSurfaceBounce(other);
+					PassPlayerBounce(other);
 				}
 			} else if(othersLayer == 11){
 				VerticalSurfaceBounce(other);
 			}
-		} else if (state == BallState.thrown || state == BallState.powered){
+		} else if (state == BallState.thrown || state == BallState.powered || state == BallState.superpowered){
 			if(pOther){
-				float heightDifference = height - pOther.height; // 
+				float heightDifference = height - pOther.height + heldHeight; // 
 				if((throwerTeam == 1 && pOther.CompareTag("Team1")) ||
 				   (throwerTeam == 2 && pOther.CompareTag("Team2"))){
 					return; // Do not hit own player with thrown ball
@@ -133,7 +144,7 @@ public class Ball : MonoBehaviour {
 				if((heightDifference > pOther.heightHitbox) || heightDifference < 0f)
 				{
 					return; // Do nothing because the ball went over or under the player
-				} else if(pOther.aState.state == ActionStates.catching){
+				} else if(pOther.aState.state == ActionStates.catching && pOther.isFacingBall()){
 					StateHeld(pOther);
 				} else {
 					if(pOther.fieldPosition == 1){
@@ -146,7 +157,7 @@ public class Ball : MonoBehaviour {
 			}
 		} else if (state == BallState.free){
 			if(pOther){
-				if(pOther.aState.state == ActionStates.catching){
+				if(pOther.aState.state == ActionStates.catching && pOther.isFacingBall()){
 					StateHeld(pOther);
 				}
 			} else {
@@ -159,13 +170,63 @@ public class Ball : MonoBehaviour {
 		if(state == BallState.held){ // Do nothing if ball held
 			return;
 		}
-		
 		// get Player component if one exists
 		Player pOther = other.GetComponent<Player>();
-		if(pOther){
-			if(pOther.aState.state == ActionStates.catching){
-				print ("Catching Player tryin to catch");
-				StateHeld(pOther);
+		int othersLayer = other.gameObject.layer; 
+
+//		if(pOther){
+//			if(pOther.aState.state == ActionStates.catching){
+//				print ("Catching Player tryin to catch");
+//				StateHeld(pOther);
+//			}
+//		}
+
+		if(pOther && pOther.noBallHit){
+			return;
+		}
+
+		if(state == BallState.pass){
+			if(othersLayer == 9){ // If other is on the 'Players' layer
+				float heightDifference = height - pOther.height + heldHeight; // 
+				if((heightDifference > pOther.heightHitbox) || heightDifference < 0f)
+				{
+					return; // Do nothing because the ball went over or under the player
+				}else if(pOther.aState.state == ActionStates.catching && pOther.isFacingBall()){
+					StateHeld(pOther);
+				} else {
+					PassPlayerBounce(other);
+				}
+			} else if(othersLayer == 11){
+				VerticalSurfaceBounce(other);
+			}
+		} else if (state == BallState.thrown || state == BallState.powered || state == BallState.superpowered){
+			if(pOther){
+				float heightDifference = height - pOther.height + heldHeight; // 
+				if((throwerTeam == 1 && pOther.CompareTag("Team1")) ||
+				   (throwerTeam == 2 && pOther.CompareTag("Team2"))){
+					return; // Do not hit own player with thrown ball
+				}
+				if((heightDifference > pOther.heightHitbox) || heightDifference < 0f)
+				{
+					return; // Do nothing because the ball went over or under the player
+				} else if(pOther.aState.state == ActionStates.catching && pOther.isFacingBall()){
+					StateHeld(pOther);
+				} else {
+					if(pOther.fieldPosition == 1){
+						pOther.PlayerHit(this);
+					}
+					VerticalSurfaceBounce(other);
+				}
+			} else {
+				VerticalSurfaceBounce(other);
+			}
+		} else if (state == BallState.free){
+			if(pOther){
+				if(pOther.aState.state == ActionStates.catching && pOther.isFacingBall()){
+					StateHeld(pOther);
+				}
+			} else {
+				VerticalSurfaceBounce(other);
 			}
 		}
 	}
@@ -184,14 +245,16 @@ public class Ball : MonoBehaviour {
 	
 	public void PassTo(Player target){
 		// release ball from holder and enable collider
-		this.collider.enabled = true;
+		//this.collider.enabled = true;
+		// Moved to pass trajectory logic
+		StartCoroutine(holder.TempNoCollide(0.2f));
 
 		//Create a normalized vector to the target with 0 z component
 		Vector3 vecToTarg = target.transform.position - transform.position;
 		vecToTarg.z = 0f;
 		vel = vecToTarg.normalized;
 		state = BallState.pass;
-		height = holder.height * 0.5f + 1.3f;
+		height = holder.height * 0.5f + heldHeight;
 		
 		//Set trajectetory calculation info
 		if(holder.fieldPosition == 1){
@@ -260,7 +323,8 @@ public class Ball : MonoBehaviour {
 		if(holder.height > 0.001f){
 			trajectory = Trajectory.jump;
 			totalTrajDist = dir.magnitude + 0.3f;
-			maxHeight = holder.height;
+			maxHeight = holder.height - 1.3f;
+			height = maxHeight;
 		} else {
 			trajectory = Trajectory.none;
 		}
@@ -291,6 +355,19 @@ public class Ball : MonoBehaviour {
 		
 		// Bounce off the surface
 		vel = Vector3.Reflect(vel, norm) * 0.8f;
+		state = BallState.free;
+		
+		// Added height for bounce off of a player
+		if(other.gameObject.GetComponent<Player>()){
+			heightVel = 10.0f;
+		}
+	}
+
+	void PassPlayerBounce(Collider other){
+		float dir = other.transform.position.x - this.transform.position.x;
+				
+		// Bounce off the surface
+		vel = Vector3.Reflect(vel, new Vector3(-dir, 0f, 0f)) * 0.8f;
 		state = BallState.free;
 		
 		// Added height for bounce off of a player
@@ -338,31 +415,47 @@ public class Ball : MonoBehaviour {
 		float distFromMidpoint = distFromOrigin - halfDist;
 		float halfDistSqrd = Mathf.Pow(halfDist, 2f);
 		float percentOfMax = 1f - (Mathf.Pow (distFromMidpoint,2f) / halfDistSqrd);
-		float multOffset = 5.0f;
-		float maxHeightMult = 0.06f * (halfDistSqrd + multOffset);
+		float offset = 5.0f;
+		float maxHeightMult = 0.06f * (halfDistSqrd + offset);
+
+		offset = height; // reuse of offset variable
 		
 		// These are different types of trajectories. It seemed that passes from different
 		// positions resulted in different trajectories. Feel free to adjust the unnamed multiplier
 		// to get the appropriate look for your trajectory.
 		if(trajectory == Trajectory.EastWestHigh){
+			maxHeight = 5.5f * maxHeightMult;
+			height = maxHeight * percentOfMax + heldHeight;
+			StartCoroutine(BallTempNoCollide(0.3f));
+		} else if(trajectory == Trajectory.NorthSouthHigh){
 			maxHeight = 12.0f * maxHeightMult;
 			height = maxHeight * percentOfMax + heldHeight;
-		} else if(trajectory == Trajectory.NorthSouthHigh){
-			maxHeight = 16.0f * maxHeightMult;
-			height = maxHeight * percentOfMax + heldHeight;
+			StartCoroutine(BallTempNoCollide(0.3f));
 		} else if(trajectory == Trajectory.mid){
 			maxHeight = 4.0f * maxHeightMult;
 			height = maxHeight * percentOfMax + heldHeight;
+			collider.enabled = true;
 		} else if(trajectory == Trajectory.low){
 			maxHeight = 3.0f * maxHeightMult;
 			height = maxHeight * percentOfMax + heldHeight;
+			collider.enabled = true;
 		} else {
 			print ("Error in PassTrajectoryLogic()");
 		}
 
 		if(height <= 0){
+			heightVel = (height - offset) / Time.fixedDeltaTime;
 			state = BallState.free;
 		}
+	}
+
+	public IEnumerator BallTempNoCollide(float secs){
+		float endTime = Time.time + secs;
+		this.collider.enabled = false;
+		while(Time.time < endTime){
+			yield return null;
+		}
+		this.collider.enabled = true;
 	}
 
 	void ResetBall(){

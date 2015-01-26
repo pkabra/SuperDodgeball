@@ -195,7 +195,7 @@ public class GameEngine : MonoBehaviour {
 					player1.player.aState.state = ActionStates.none;
 					player1.player.PickupBall();
 				}
-			} else {
+			} else if(player1.player.kState.state != KineticStates.fall){
 				if (ball.state == BallState.rest || ball.state == BallState.free) {
 					player1.player.PickupBall();
 				} else {
@@ -220,7 +220,7 @@ public class GameEngine : MonoBehaviour {
 				ball.ThrowToPos(targPos, throwVel1);
 			} else {
 				// Pickup
-				if (ball.state == BallState.thrown || ball.state == BallState.pass) {
+				if (ball.state != BallState.rest && ball.state != BallState.free) {
 					player1.player.AttemptCatchAtTime(Time.time);
 				} else {
 					player1.player.PickupBall();
@@ -271,7 +271,7 @@ public class GameEngine : MonoBehaviour {
 					player2.player.aState.state = ActionStates.none;
 					player2.player.PickupBall();
 				}
-			} else {
+			} else if(player1.player.kState.state != KineticStates.fall){
 				if (ball.state == BallState.rest || ball.state == BallState.free) {
 					player2.player.PickupBall();
 				} else {
@@ -296,7 +296,7 @@ public class GameEngine : MonoBehaviour {
 				ball.ThrowToPos(targPos, throwVel2);
 			} else {
 				// Pickup
-				if (ball.state == BallState.thrown || ball.state == BallState.pass) {
+				if (ball.state != BallState.rest && ball.state != BallState.free) {
 					player2.player.AttemptCatchAtTime(Time.time);
 				} else {
 					player2.player.PickupBall();

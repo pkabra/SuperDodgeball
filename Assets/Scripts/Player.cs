@@ -86,6 +86,7 @@ public class Player : MonoBehaviour {
 	public void StateThrowing(){
 		// Player just threw the ball
 		aState.state = ActionStates.throwing;
+		StartCoroutine(resetAStateNone(0.5f));
 	}
 		
 	void OnTriggerEnter(Collider other){
@@ -219,15 +220,14 @@ public class Player : MonoBehaviour {
 	
 	public void PickupBall() {
 		Ball theBall = GameEngine.ball;
-		//float heightDifference = theBall.height - this.height + 1.3f; 
 		float heightDifference = theBall.height - this.height; 
 		float delta = Vector3.Distance(transform.position, theBall.transform.position);
-		
-		Crouch();
-		
+
 		if (delta < 0.5f && ((heightDifference <= heightHitbox) && heightDifference >= 0f)) {
 			theBall.StateHeld (this);
 		}
+		
+		Crouch();
 	}
 	
 	public void Crouch() {
@@ -312,8 +312,17 @@ public class Player : MonoBehaviour {
 		this.noBallHit = false;
 	}
 
+	public IEnumerator resetAStateNone(float secs){
+		float endTime = Time.time + secs;
+		while(Time.time < endTime){
+			yield return null;
+		}
+		this.aState.state = ActionStates.none;
+	}
+
 	public void PlayerHit(Ball other) {
 		kState.state = KineticStates.fall;
+		aState.state = ActionStates.none;
 		
 		float damage = Mathf.Ceil(Random.value * 8);
 		if (other.state == BallState.superpowered) {
@@ -324,7 +333,6 @@ public class Player : MonoBehaviour {
 		
 		hp -= damage >= hp ? hp : damage;
 
-		print("UpdateCOver Called");
 		hpGui.UpdateCover(hp);
 		
 		if (hp <= 0f) {
@@ -352,7 +360,7 @@ public class Player : MonoBehaviour {
 		}
 
 		if (this.aState.state == ActionStates.holding) {
-			if(this.CompareTag("Team1")){
+			if(this.team == 1){
 				PassTargetingLogicTeam1();
 			} else {
 				PassTargetingLogicTeam2();
@@ -380,7 +388,13 @@ public class Player : MonoBehaviour {
 				transform.position = keepInVec;
 			}
 		}
-		Vector3 heightOffset = new Vector3( 0, height * 0.5f + 1.2f, 0 );
+		float newZ;
+		if(facing == PlayerFacing.east || facing == PlayerFacing.northEast || facing == PlayerFacing.southEast){
+			newZ = transform.position.y * 0.001f;
+		} else {
+			newZ = transform.position.y * -0.001f;
+		}
+		Vector3 heightOffset = new Vector3( 0, height * 0.5f + 1.2f, newZ);
 		spriteHolderTrans.localPosition = heightOffset;
 		animator.SetInteger(aniStateID, (int)this.aState.state);
 	}
@@ -560,19 +574,19 @@ public class Player : MonoBehaviour {
 			}
 			
 			if(hitOnLeft){ // Hit left side 
-				print ("hit left");
+				//print ("hit left");
 				xLock = true;
 				desiredPos.x = other.transform.position.x - (boundaryHalfWidth + thisHalfWidth + 0.001f);
 			} else if (hitOnRight){ // Hit right side
-				print ("hit right");
+				//print ("hit right");
 				xLock = true;
 				desiredPos.x = other.transform.position.x + (boundaryHalfWidth + thisHalfWidth + 0.001f);
 			} else if (hitOnBottom){ // Hit bottom
-				print ("hit bottom");
+				//print ("hit bottom");
 				yLock = true;
 				desiredPos.y = other.transform.position.y - (boundaryHalfHeight + thisHalfHeight + 0.001f);
 			} else if (hitOnTop){ // hit top
-				print ("hit top");
+				//print ("hit top");
 				yLock = true;
 				desiredPos.y = other.transform.position.y + (boundaryHalfHeight + thisHalfHeight + 0.001f);
 			}
@@ -583,15 +597,17 @@ public class Player : MonoBehaviour {
 			}
 			
 			this.transform.position = desiredPos;
+
+
 			
-			if (GameEngine.ball.holder != null && GetInstanceID() == GameEngine.ball.holder.GetInstanceID()){
+			if (aState.state == ActionStates.holding){
 				Vector3 pos = transform.position;
 				if (facing == PlayerFacing.west || facing == PlayerFacing.northWest || facing == PlayerFacing.southWest) {
 					pos.x -= GameEngine.ball.heldOffsetX;
 				} else {
 					pos.x += GameEngine.ball.heldOffsetX;
 				}
-				pos.y += height * 0.2f + 0.5f;
+				//pos.y += height * 0.2f + 0.5f;
 				GameEngine.ball.transform.position = pos;
 			}
 		}
@@ -695,5 +711,27 @@ public class Player : MonoBehaviour {
 			}
 		}
 		GameEngine.passTarget = closest;
+	}
+
+	public bool isFacingBall(){
+		float xDirOfBall = GameEngine.ball.transform.position.x - this.transform.position.x;
+
+		if(xDirOfBall > 0f){
+			if (this.facing == PlayerFacing.northEast || this.facing == PlayerFacing.east ||
+			    this.facing == PlayerFacing.southEast){
+				return true;
+			} else {
+				return false;
+			}
+		} else if (xDirOfBall < 0f){
+			if (this.facing == PlayerFacing.northWest || this.facing == PlayerFacing.west ||
+			    this.facing == PlayerFacing.southWest){
+				return true;
+			} else {
+				return false;
+			}
+		} else {
+			return true;
+		}
 	}
 }
