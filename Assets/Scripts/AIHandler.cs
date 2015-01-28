@@ -32,17 +32,13 @@ public class AIHandler : MonoBehaviour {
 				if (player.transform.position.x > leftEdge) {
 					player.Movement(-1f, 0f);
 				} else {
-					if (player.facing != PlayerFacing.east) {
-						player.Movement(0.1f, 0f);
-					}
+					player.facing = PlayerFacing.east;
 				}
 			} else {
 				if (player.transform.position.x < rightEdge) {
 					player.Movement(1f, 0f);
 				} else {
-					if (player.facing != PlayerFacing.west) {
-						player.Movement(-0.1f, 0f);
-					}
+					player.facing = PlayerFacing.west;
 				}
 			}
 		}
@@ -116,6 +112,26 @@ public class AIHandler : MonoBehaviour {
 				} else {
 					player.PickupBall();
 				}
+			}
+		}
+	}
+	
+	public void returnBehindBoundary() {
+		if (player.kState.state == KineticStates.run) {
+			player.kState.state = KineticStates.walk;
+		}
+		
+		if (player.team == 1) {
+			if (player.transform.position.x < 1f && player.facing == PlayerFacing.east) {
+				player.Movement(1f, 0f);
+			} else {
+				player.Movement(-1f, 0f);
+			}
+		} else {
+			if (player.transform.position.x > -1f && player.facing == PlayerFacing.west) {
+				player.Movement(-1f, 0f);
+			} else {
+				player.Movement(1f, 0f);
 			}
 		}
 	}

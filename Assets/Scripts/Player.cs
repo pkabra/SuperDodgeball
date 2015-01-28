@@ -18,6 +18,8 @@ public class KineticState {
 
 public class Player : MonoBehaviour {
 	public bool AIControl = true; // Is this player under AI control?
+	public AIHandler playerAI = null;
+	public bool goneOverboard = false;
 
 	public Vector3 pos0 = Vector3.zero; // previous frame position
 	public Vector3 vel = Vector3.zero;
@@ -27,16 +29,21 @@ public class Player : MonoBehaviour {
 	public float heightHitbox = 3f;
 	public float bounciness = 0.85f;
 
+	public float lastH = 0f;
+	public float lastV = 0f;
+
 	public KineticState kState = new KineticState();
 	public ActionState aState = new ActionState();
 	public PlayerFacing facing = PlayerFacing.east;
 	public int fieldPosition = 0;
 	public int team = 0;
+	public bool isShielded = false;
 
 	public float jumpVelX = 0f;
 	public float jumpVelY = 0f;
 
 	public Transform spriteHolderTrans = null;
+	private Shield shieldHolder = null;
 	public Animator animator = null;
 	private int aniStateID = 0;
 	public GameObject HPBar = null;
@@ -73,14 +80,17 @@ public class Player : MonoBehaviour {
 			}
 		}
 		spriteHolderTrans = this.transform.FindChild("SpriteHolder");
+		shieldHolder = this.transform.FindChild("ShieldHolder").GetComponent<Shield>();
+		shieldHolder.myPlayer = this;
 		animator = this.gameObject.GetComponentInChildren<Animator>();
 		aniStateID = Animator.StringToHash("state");
 		if(this.fieldPosition == 1){
 			hpGui = this.HPBar.GetComponentInChildren<HPUpdaterGUI>();
 		}
 
-		//fieldPosition = 1; //TODO assign all positions
 		GameEngine.passTarget = this;
+
+		playerAI = gameObject.GetComponent<AIHandler>();
 	}
 
 	public void StateThrowing(){
@@ -92,16 +102,16 @@ public class Player : MonoBehaviour {
 	void OnTriggerEnter(Collider other){
 		
 		if(other.gameObject.tag == "InfieldBoundary"){
-			if(kState.state == KineticStates.walk)
+			if(kState.state == KineticStates.walk && !goneOverboard)
 			{
 				InfieldCollideLogic(other);
 			}
 		}
 	}
-
+	
 	void OnTriggerStay(Collider other){
 		if(other.gameObject.tag == "InfieldBoundary"){
-			if(kState.state == KineticStates.walk)
+			if(kState.state == KineticStates.walk && !goneOverboard)
 			{
 				InfieldCollideLogic(other);
 			}
@@ -113,10 +123,11 @@ public class Player : MonoBehaviour {
 		if (kState.state != KineticStates.walk && kState.state != KineticStates.run) return;
 		if (aState.state == ActionStates.catching) return;
 		
-		Vector3 pos1 = Vector3.zero;
+		lastH = h;
+		lastV = v;
 		
 		if (fieldPosition != 1) {
-			pos1 = HandleSidelineMovement(h, v);
+			HandleSidelineMovement(h, v);
 		} else {
 			// Protection from overriding collision resolution
 			if(xLock){
@@ -135,16 +146,42 @@ public class Player : MonoBehaviour {
 			
 			// Movement
 			if (kState.state == KineticStates.run) {
-				vel.x = h * 0.3f;
-				vel.y = v * 0.05f;
+				if (GameEngine.stageType == StageTypes.ice) {
+					if (h > 0f) {
+						vel.x += Mathf.Min(6f, (h * 6f * 0.1f));
+					} else if (h < 0f){
+						vel.x += Mathf.Max(-6f, (h * 6f * 0.1f));
+					} else {
+						vel.x = (vel.x > -0.05f && vel.x < 0.05f) ? 0f : vel.x + vel.x * -0.1f;
+					}
+					vel.y = v * 1f;
+				} else {
+					vel.x = h * 6f;
+					vel.y = v * 1f;
+				}
 			} else {
-				vel.x = h * 0.1f;
-				vel.y = v * 0.1f;
+				if (GameEngine.stageType == StageTypes.ice) {
+					if (h > 0f) {
+						vel.x += Mathf.Min(2f, (h * 2f * 0.1f));
+					} else if (h < 0f){
+						vel.x += Mathf.Max(-2f, (h * 2f * 0.1f));
+					} else {
+						vel.x = (vel.x > -0.05f && vel.x < 0.05f) ? 0f : vel.x + vel.x * -0.1f;
+					}
+					if (v > 0f) {
+						vel.y += Mathf.Min(2f, (v * 2f * 0.1f));
+					} else if (v < 0f){
+						vel.y += Mathf.Max(-2f, (v * 2f * 0.1f));
+					} else {
+						vel.y = (vel.y > -0.05f && vel.y < 0.05f) ? 0f : vel.y + vel.y * -0.1f;
+					}
+				} else {
+					vel.x = h * 2f;
+					vel.y = v * 2f;
+				}
 			}
-			pos1 = pos0 + vel;
 		}
 		
-		Quaternion rot = transform.rotation;
 		if (h < 0f || (team == 1 && fieldPosition == 4)) {
 			if (v < 0f) {
 				facing = PlayerFacing.southWest;
@@ -153,7 +190,6 @@ public class Player : MonoBehaviour {
 			} else {
 				facing = PlayerFacing.west;
 			}
-			rot.y = 180f;
 		} else if (h > 0f || (team == 2 && fieldPosition == 4)) {
 			if (v < 0f) {
 				facing = PlayerFacing.southEast;
@@ -162,7 +198,6 @@ public class Player : MonoBehaviour {
 			} else {
 				facing = PlayerFacing.east;			
 			}
-			rot.y = 0f;
 		} else {
 			if (v < 0f) {
 				if (facing == PlayerFacing.east || facing == PlayerFacing.northEast) {
@@ -178,30 +213,19 @@ public class Player : MonoBehaviour {
 				}
 			}
 		}
-		
-		if (fieldPosition == 1) {
-			if(pos1.y > 0.2f){
-				pos1.y = 0.2f;
-			} else if (pos1.y < -3.25f){
-				pos1.y = -3.25f;
-			}
-		}
-		
-		transform.position = pos1;
-		transform.rotation = rot;
 	}
 	
-	public Vector3 HandleSidelineMovement(float h, float v) {
+	public void HandleSidelineMovement(float h, float v) {
 		Vector3 pos = transform.position;
 		if (fieldPosition < 4) {
-			pos.x += h * 0.1f;
+			vel.x = h * 2f;
 			if (team == 1) {
 				if (pos.x > 9f || pos.x < 0f) {
-					pos = transform.position;
+					vel.x = 0f;
 				}
 			} else {
 				if (pos.x < -9f || pos.x > 0f) {
-					pos = transform.position;
+					vel.x = 0f;
 				}
 			}
 		} else {
@@ -209,13 +233,12 @@ public class Player : MonoBehaviour {
 			if (team == 2) {
 				slope = GameEngine.sideline.slopeLeft;
 			}
-			pos.y += v * 0.1f;
-			pos.x += v * 0.1f/slope;
+			vel.y = v * 2f;
+			vel.x = v * 2f/slope;
 			if (pos.y > 0.2f || pos.y < -3.25f) {
-				pos = transform.position;
+				vel.y = 0f;
 			}
 		}
-		return pos;
 	}
 	
 	public void PickupBall() {
@@ -302,14 +325,15 @@ public class Player : MonoBehaviour {
 		StartCoroutine( AttemptCatch() );
 	}
 
-
 	public IEnumerator TempNoCollide(float secs){
 		float endTime = Time.time + secs;
 		this.noBallHit = true;
+		if(this.isShielded) shieldHolder.collider.enabled = false;
 		while(Time.time < endTime){
 			yield return null;
 		}
 		this.noBallHit = false;
+		if(this.isShielded) shieldHolder.collider.enabled = true;
 	}
 
 	public IEnumerator resetAStateNone(float secs){
@@ -350,6 +374,14 @@ public class Player : MonoBehaviour {
 	}
 
 	void FixedUpdate() {
+		Quaternion rot = transform.rotation;
+		if (facing == PlayerFacing.east || facing == PlayerFacing.northEast || facing == PlayerFacing.southEast) {
+			rot.y = 0f;
+		} else {
+			rot.y = 180f;
+		}
+		transform.rotation = rot;
+
 		if (this.kState.state == KineticStates.fall) {
 			PlayerFallLogic();
 			this.transform.position += vel * Time.fixedDeltaTime;
@@ -357,6 +389,30 @@ public class Player : MonoBehaviour {
 		
 		if (this.kState.state == KineticStates.jump || this.kState.state == KineticStates.runjump) {
 			JumpLogic();
+		}
+
+		if (kState.state == KineticStates.walk || kState.state == KineticStates.run) {
+			Vector3 pos1 = transform.position;
+			if (lastH < 0.0001f && lastH > -0.0001f && GameEngine.stageType == StageTypes.ice) {
+				vel.x = (vel.x > -0.05f && vel.x < 0.05f) ? 0f : vel.x + vel.x * -0.1f;
+			}
+			if (lastV < 0.0001f && lastV > -0.0001f && GameEngine.stageType == StageTypes.ice) {
+				vel.y = (vel.y > -0.05f && vel.y < 0.05f) ? 0f : vel.y + vel.y * -0.1f;
+			}
+			
+			pos1 += vel * Time.fixedDeltaTime;
+			if (fieldPosition == 1) {
+				if(pos1.y > 0.2f){
+					pos1.y = 0.2f;
+				} else if (pos1.y < -3.25f){
+					pos1.y = -3.25f;
+				}
+			}
+			lastV = 0f;
+			lastH = 0f;
+			if (!xLock && !yLock) {
+				transform.position = pos1;
+			}
 		}
 
 		if (this.aState.state == ActionStates.holding) {
@@ -396,6 +452,7 @@ public class Player : MonoBehaviour {
 		}
 		Vector3 heightOffset = new Vector3( 0, height * 0.5f + 1.2f, newZ);
 		spriteHolderTrans.localPosition = heightOffset;
+		//shieldHolder.transform.position = spriteHolderTrans.position;
 		animator.SetInteger(aniStateID, (int)this.aState.state);
 	}
 
@@ -554,7 +611,7 @@ public class Player : MonoBehaviour {
 					RaycastHit hit;
 					other.Raycast(ray, out hit, 20.0f);
 					Vector3 norm = hit.normal;
-					//print (norm);
+					print (norm);
 					if(norm.x > 0){
 						//print ("right side");
 						hitOnRight = true;
@@ -574,31 +631,33 @@ public class Player : MonoBehaviour {
 			}
 			
 			if(hitOnLeft){ // Hit left side 
-				//print ("hit left");
+				print ("hit left");
 				xLock = true;
-				desiredPos.x = other.transform.position.x - (boundaryHalfWidth + thisHalfWidth + 0.001f);
+				vel.x = 0f;
+				desiredPos.x = other.transform.position.x - (boundaryHalfWidth + thisHalfWidth + 0.01f);
 			} else if (hitOnRight){ // Hit right side
-				//print ("hit right");
+				print ("hit right");
 				xLock = true;
-				desiredPos.x = other.transform.position.x + (boundaryHalfWidth + thisHalfWidth + 0.001f);
+				vel.x = 0f;
+				desiredPos.x = other.transform.position.x + (boundaryHalfWidth + thisHalfWidth + 0.01f);
 			} else if (hitOnBottom){ // Hit bottom
 				//print ("hit bottom");
 				yLock = true;
-				desiredPos.y = other.transform.position.y - (boundaryHalfHeight + thisHalfHeight + 0.001f);
+				vel.y = 0f;
+				desiredPos.y = other.transform.position.y - (boundaryHalfHeight + thisHalfHeight + 0.01f);
 			} else if (hitOnTop){ // hit top
 				//print ("hit top");
 				yLock = true;
-				desiredPos.y = other.transform.position.y + (boundaryHalfHeight + thisHalfHeight + 0.001f);
+				vel.y = 0f;
+				desiredPos.y = other.transform.position.y + (boundaryHalfHeight + thisHalfHeight + 0.01f);
 			}
 			
 			if(Vector3.Distance(this.transform.position,pos0) <= Vector3.Distance(desiredPos,pos0)){
 				desiredPos.x = this.transform.position.x; // helps resolve colliding with more than one collider
 				desiredPos.y = this.transform.position.y;
 			}
-			
+
 			this.transform.position = desiredPos;
-
-
 			
 			if (aState.state == ActionStates.holding){
 				Vector3 pos = transform.position;
@@ -733,5 +792,16 @@ public class Player : MonoBehaviour {
 		} else {
 			return true;
 		}
+	}
+
+	public void shieldEarned(){
+		shieldHolder.enableShield();
+		isShielded = true;
+	}
+
+	public void shieldUsed(){
+		shieldHolder.disableShield();
+		isShielded = false;
+		StartCoroutine(TempNoCollide(0.5f));
 	}
 }

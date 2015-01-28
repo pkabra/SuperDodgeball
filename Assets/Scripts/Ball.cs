@@ -137,23 +137,31 @@ public class Ball : MonoBehaviour {
 		} else if (state == BallState.thrown || state == BallState.powered || state == BallState.superpowered){
 			if(pOther){
 				float heightDifference = height - pOther.height + heldHeight; // 
-				if((throwerTeam == 1 && pOther.CompareTag("Team1")) ||
-				   (throwerTeam == 2 && pOther.CompareTag("Team2"))){
+				if(throwerTeam == pOther.team ){
 					return; // Do not hit own player with thrown ball
 				}
-				if((heightDifference > pOther.heightHitbox) || heightDifference < 0f)
-				{
+				if((heightDifference > pOther.heightHitbox) || heightDifference < 0f){
 					return; // Do nothing because the ball went over or under the player
 				} else if(pOther.aState.state == ActionStates.catching && pOther.isFacingBall()){
+					if(state != BallState.thrown){
+						pOther.shieldEarned();
+					}
 					StateHeld(pOther);
 				} else {
 					if(pOther.fieldPosition == 1){
-						pOther.PlayerHit(this);
+						if(!pOther.isShielded || !pOther.isFacingBall()){
+							pOther.PlayerHit(this);
+						} else {
+							// Do nothing, the player is shielded and facing the ball
+							// The shield will take care of itself
+						}
 					}
 					VerticalSurfaceBounce(other);
 				}
-			} else {
+			} else if(othersLayer == 11){
 				VerticalSurfaceBounce(other);
+			} else { // The ball has hit a shield!
+				BallOnBallAction(other); 
 			}
 		} else if (state == BallState.free){
 			if(pOther){
@@ -456,6 +464,16 @@ public class Ball : MonoBehaviour {
 			yield return null;
 		}
 		this.collider.enabled = true;
+	}
+
+	void BallOnBallAction(Collider other){
+		Vector3 norm = other.transform.position - this.transform.position;
+		// Bounce off the surface
+		vel = Vector3.Reflect(vel, norm);
+		state = BallState.thrown;
+		Shield theShield = other.GetComponent<Shield>();
+		theShield.myPlayer.shieldUsed();
+		theShield.disableShield();
 	}
 
 	void ResetBall(){

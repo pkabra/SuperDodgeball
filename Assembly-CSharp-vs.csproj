@@ -52,6 +52,7 @@
      <Compile Include="Assets\Scripts\HPUpdaterGUI.cs" />
      <Compile Include="Assets\Scripts\InfieldPlayerBoundry.cs" />
      <Compile Include="Assets\Scripts\Player.cs" />
+     <Compile Include="Assets\Scripts\Shield.cs" />
      <Compile Include="Assets\Scripts\Sideline.cs" />
      <Compile Include="Assets\Scripts\SizePrint.cs" />
      <Compile Include="Assets\Scripts\SuperCamera.cs" />
