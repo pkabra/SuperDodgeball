@@ -11,6 +11,12 @@ public class Shield : MonoBehaviour {
 		this.collider.enabled = false;
 		this.renderer.enabled = false;
 	}
+
+	void FixedUpdate(){
+		Vector3 newVec = myPlayer.spriteHolderTrans.position;
+		newVec.x = this.transform.position.x;
+		this.transform.position = newVec;
+	}
 	
 	public void disableShield(){
 		this.collider.enabled = false;
@@ -23,18 +29,30 @@ public class Shield : MonoBehaviour {
 	}
 
 	IEnumerator fadeIn(){
+		int i;
 		float endTime = Time.time + 0.6f;
 		while(Time.time < endTime){
-			this.renderer.enabled = !this.renderer.enabled;
+			i = (int)(Time.time * 40f) % 2;
+			if(i == 1){
+				this.renderer.enabled = true;
+			} else {
+				this.renderer.enabled = false;
+			}
 			yield return null;
 		}
 		this.renderer.enabled = true;
 	}
 
 	IEnumerator fadeOut(){
+		int i;
 		float endTime = Time.time + 0.6f;
 		while(Time.time < endTime){
-			this.renderer.enabled = !this.renderer.enabled;
+			i = (int)(Time.time * 40f) % 2;
+			if(i == 1){
+				this.renderer.enabled = true;
+			} else {
+				this.renderer.enabled = false;
+			}
 			yield return null;
 		}
 		this.renderer.enabled = false;

@@ -28,7 +28,8 @@ public class GameEngine : MonoBehaviour {
 		public void ChangeControlTo(Player p) {
 			if (player != null) {
 				player.AIControl = true;
-				player.Movement (0f, 0f); // To signal that the player ain't moving no more.
+				//player.Movement (0f, 0f); // To signal that the player ain't moving no more.
+				player.vel = Vector3.zero;
 			}
 			p.AIControl = false;
 			player = p;
@@ -255,7 +256,7 @@ public class GameEngine : MonoBehaviour {
 					} else {
 						player1.player.Crouch();
 					}
-				}
+				} 
 			} else if (player1.b) {
 				// Pickup or throw
 				if (player1.player.aState.state == ActionStates.holding) {

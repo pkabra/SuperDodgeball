@@ -2,12 +2,14 @@
 using System.Collections;
 
 public enum BallState { rest, free, held, pass, thrown, powered, superpowered };
+public enum PowerMode { none, fastball, wreckingball, wave, vampire};
 public enum Trajectory { none, jump, low, mid, EastWestHigh, NorthSouthHigh };
 
 public class Ball : MonoBehaviour {
 	public Vector3 vel = Vector3.zero;
 	public float height = 0.0f;
 	public BallState state = BallState.rest;
+	public PowerMode mode = PowerMode.none;
 	public Trajectory trajectory = Trajectory.none;
 	
 	public Player holder = null;
@@ -32,7 +34,9 @@ public class Ball : MonoBehaviour {
 	private float heightVel = 0.0f; // velocity along the height axis, used for faking gravity
 	private float gravity = -0.9f;
 	private float bounciness = 0.85f;
+	private float timeStamp = 0.0f;
 	private int throwerTeam = 0;
+	private int wreckingMode = 0;
 	public Vector3 prevPos = Vector3.zero;
 	private Vector3 targetPos = Vector3.zero;
 
@@ -68,18 +72,10 @@ public class Ball : MonoBehaviour {
 			}
 		} else if(state == BallState.thrown || state == BallState.powered ){
 			if(trajectory == Trajectory.jump){
-				float distToTarget = Vector3.Distance(transform.position, targetPos);
-				float offset = height;
-				height = maxHeight * distToTarget / totalTrajDist;
-				heightVel = (height - offset) / Time.fixedDeltaTime;
-				if(heightVel >= 0f){
-					heightVel = 8.0f; // This is how hard the ball bounces off the ground
-					vel *= 3.5f; // This is how much velocity the ball maintains after first bounce
-					state = BallState.free;
-					//FreeBallinLogic();
-					this.transform.position += vel * bounciness * Time.fixedDeltaTime;
-					return;
-				}
+				if(!JumpThrowLogic())return;
+			}
+			if(state == BallState.powered){
+				WreckingBallLogic();
 			}
 			this.transform.position += vel * throwSpeedMult * Time.fixedDeltaTime;
 		} else if(state == BallState.free){
@@ -87,15 +83,6 @@ public class Ball : MonoBehaviour {
 			this.transform.position += vel * Time.fixedDeltaTime;
 		} else if(state == BallState.held){
 			shadow.renderer.enabled = false;
-			Vector3 pos = holder.transform.position;
-			if (holder.facing == PlayerFacing.west || holder.facing == PlayerFacing.northWest || holder.facing == PlayerFacing.southWest) {
-				pos.x -= heldOffsetX;
-			} else {
-				pos.x += heldOffsetX;
-			}
-			//pos.y += holder.height * 0.2f + 0.5f;
-			transform.position = pos;
-			//height = holder.height * 0.5f + 1.3f;
 		}
 		
 		// Block for things that should always happen
@@ -108,135 +95,11 @@ public class Ball : MonoBehaviour {
 	
 	
 	void OnTriggerEnter(Collider other){
-		if(state == BallState.held){ // Do nothing if ball held
-			return;
-		}
-		
-		int othersLayer = other.gameObject.layer; 
-		Player pOther = other.GetComponent<Player>(); // maybe null if the 'other' is not a player
-
-		// Special cases for when player not to be hit by ball
-		if(pOther && pOther.noBallHit){
-			return;
-		}
-
-		if(state == BallState.pass){
-			if(othersLayer == 9){ // If other is on the 'Players' layer
-				float heightDifference = height - pOther.height + heldHeight; // 
-				if((heightDifference > pOther.heightHitbox) || heightDifference < 0f)
-				{
-					return; // Do nothing because the ball went over or under the player
-				}else if(pOther.aState.state == ActionStates.catching && pOther.isFacingBall()){
-					StateHeld(pOther);
-				} else {
-					PassPlayerBounce(other);
-				}
-			} else if(othersLayer == 11){
-				VerticalSurfaceBounce(other);
-			}
-		} else if (state == BallState.thrown || state == BallState.powered || state == BallState.superpowered){
-			if(pOther){
-				float heightDifference = height - pOther.height + heldHeight; // 
-				if(throwerTeam == pOther.team ){
-					return; // Do not hit own player with thrown ball
-				}
-				if((heightDifference > pOther.heightHitbox) || heightDifference < 0f){
-					return; // Do nothing because the ball went over or under the player
-				} else if(pOther.aState.state == ActionStates.catching && pOther.isFacingBall()){
-					if(state != BallState.thrown){
-						pOther.shieldEarned();
-					}
-					StateHeld(pOther);
-				} else {
-					if(pOther.fieldPosition == 1){
-						if(!pOther.isShielded || !pOther.isFacingBall()){
-							pOther.PlayerHit(this);
-						} else {
-							// Do nothing, the player is shielded and facing the ball
-							// The shield will take care of itself
-						}
-					}
-					VerticalSurfaceBounce(other);
-				}
-			} else if(othersLayer == 11){
-				VerticalSurfaceBounce(other);
-			} else { // The ball has hit a shield!
-				BallOnBallAction(other); 
-			}
-		} else if (state == BallState.free){
-			if(pOther){
-				if(pOther.aState.state == ActionStates.catching && pOther.isFacingBall()){
-					StateHeld(pOther);
-				}
-			} else {
-				VerticalSurfaceBounce(other);
-			}
-		}
+		BallCollisionLogic(other);
 	}
 	
 	void OnTriggerStay(Collider other){
-		if(state == BallState.held){ // Do nothing if ball held
-			return;
-		}
-		// get Player component if one exists
-		Player pOther = other.GetComponent<Player>();
-		int othersLayer = other.gameObject.layer; 
-
-//		if(pOther){
-//			if(pOther.aState.state == ActionStates.catching){
-//				print ("Catching Player tryin to catch");
-//				StateHeld(pOther);
-//			}
-//		}
-
-		if(pOther && pOther.noBallHit){
-			return;
-		}
-
-		if(state == BallState.pass){
-			if(othersLayer == 9){ // If other is on the 'Players' layer
-				float heightDifference = height - pOther.height + heldHeight; // 
-				if((heightDifference > pOther.heightHitbox) || heightDifference < 0f)
-				{
-					return; // Do nothing because the ball went over or under the player
-				}else if(pOther.aState.state == ActionStates.catching && pOther.isFacingBall()){
-					StateHeld(pOther);
-				} else {
-					PassPlayerBounce(other);
-				}
-			} else if(othersLayer == 11){
-				VerticalSurfaceBounce(other);
-			}
-		} else if (state == BallState.thrown || state == BallState.powered || state == BallState.superpowered){
-			if(pOther){
-				float heightDifference = height - pOther.height + heldHeight; // 
-				if((throwerTeam == 1 && pOther.CompareTag("Team1")) ||
-				   (throwerTeam == 2 && pOther.CompareTag("Team2"))){
-					return; // Do not hit own player with thrown ball
-				}
-				if((heightDifference > pOther.heightHitbox) || heightDifference < 0f)
-				{
-					return; // Do nothing because the ball went over or under the player
-				} else if(pOther.aState.state == ActionStates.catching && pOther.isFacingBall()){
-					StateHeld(pOther);
-				} else {
-					if(pOther.fieldPosition == 1){
-						pOther.PlayerHit(this);
-					}
-					VerticalSurfaceBounce(other);
-				}
-			} else {
-				VerticalSurfaceBounce(other);
-			}
-		} else if (state == BallState.free){
-			if(pOther){
-				if(pOther.aState.state == ActionStates.catching && pOther.isFacingBall()){
-					StateHeld(pOther);
-				}
-			} else {
-				VerticalSurfaceBounce(other);
-			}
-		}
+		BallCollisionLogic(other);
 	}
 	
 	public void StateHeld(Player newHolder){
@@ -252,11 +115,6 @@ public class Ball : MonoBehaviour {
 	}
 	
 	public void PassTo(Player target){
-		// release ball from holder and enable collider
-		//this.collider.enabled = true;
-		// Moved to pass trajectory logic
-		StartCoroutine(holder.TempNoCollide(0.2f));
-
 		//Create a normalized vector to the target with 0 z component
 		Vector3 vecToTarg = target.transform.position - transform.position;
 		vecToTarg.z = 0f;
@@ -276,7 +134,7 @@ public class Ball : MonoBehaviour {
 			} else {
 				print ("Pass Logic Error");
 			}
-		} else if( holder.fieldPosition == 2 || holder.fieldPosition == 2){
+		} else if( holder.fieldPosition == 2 || holder.fieldPosition == 3){
 			if(target.fieldPosition == 4){
 				trajectory = Trajectory.low;
 			} else if (target.fieldPosition == 3 || target.fieldPosition == 2){
@@ -287,7 +145,7 @@ public class Ball : MonoBehaviour {
 				print ("Pass Logic Error");
 			}
 		} else if( holder.fieldPosition == 4){
-			if(target.fieldPosition == 3 || target.fieldPosition == 3){
+			if(target.fieldPosition == 3 || target.fieldPosition == 2){
 				trajectory = Trajectory.low;	
 			} else if (target.fieldPosition == 1){
 				trajectory = Trajectory.EastWestHigh;
@@ -298,6 +156,13 @@ public class Ball : MonoBehaviour {
 
 		passOrigin = this.transform.position;
 		totalTrajDist = Mathf.Max(vecToTarg.magnitude - 0.2f, 0.2f);
+		if(trajectory == Trajectory.EastWestHigh){
+			if(target.fieldPosition == 4){
+				totalTrajDist += 0.2f;
+			} else {
+				totalTrajDist -=0.2f;
+			}
+		}
 		
 		//Change holder info 
 		holder.aState.state = ActionStates.passing;
@@ -467,15 +332,131 @@ public class Ball : MonoBehaviour {
 	}
 
 	void BallOnBallAction(Collider other){
-		Vector3 norm = other.transform.position - this.transform.position;
+		Vector3 norm = other.transform.position + ((SphereCollider)other).center * other.transform.lossyScale.x - prevPos;
+		norm.z = 0f;
 		// Bounce off the surface
 		vel = Vector3.Reflect(vel, norm);
 		state = BallState.thrown;
 		Shield theShield = other.GetComponent<Shield>();
 		theShield.myPlayer.shieldUsed();
 		theShield.disableShield();
+		if(throwerTeam == 1){
+			throwerTeam = 2;
+		} else {
+			throwerTeam = 1;
+		}
 	}
 
+	bool JumpThrowLogic(){
+		float distToTarget = Vector3.Distance(transform.position, targetPos);
+		float offset = height;
+		height = maxHeight * distToTarget / totalTrajDist;
+		heightVel = (height - offset) / Time.fixedDeltaTime;
+		if(heightVel >= 0f){
+			heightVel = 8.0f; // This is how hard the ball bounces off the ground
+			vel *= 3.5f; // This is how much velocity the ball maintains after first bounce
+			state = BallState.free;
+			this.transform.position += vel * bounciness * Time.fixedDeltaTime;
+			return false;
+		}
+		return true;
+	}
+
+	void BallCollisionLogic(Collider other){
+		if(state == BallState.held){ // Do nothing if ball held
+			return;
+		}
+		
+		int othersLayer = other.gameObject.layer; 
+		Player pOther = other.GetComponent<Player>(); // maybe null if the 'other' is not a player
+		
+		// Special cases for when player not to be hit by ball
+		if(pOther && pOther.noBallHit){
+			return;
+		}
+		
+		if(state == BallState.pass){
+			if(othersLayer == 9){ // If other is on the 'Players' layer
+				float heightDifference = height - pOther.height + heldHeight; // 
+				if((heightDifference > pOther.heightHitbox) || heightDifference < 0f)
+				{
+					return; // Do nothing because the ball went over or under the player
+				}else if(pOther.aState.state == ActionStates.catching && pOther.isFacingBall()){
+					StateHeld(pOther);
+				} else {
+					PassPlayerBounce(other);
+				}
+			} else if(othersLayer == 11){
+				VerticalSurfaceBounce(other);
+			}
+		} else if (state == BallState.thrown || state == BallState.powered || state == BallState.superpowered){
+			if(pOther){
+				float heightDifference = height - pOther.height + heldHeight; // 
+				if(throwerTeam == pOther.team ){
+					return; // Do not hit own player with thrown ball
+				}
+
+				if(state == BallState.powered && mode == PowerMode.wreckingball){
+					if(wreckingMode == 0){
+						timeStamp = Time.time;
+						wreckingMode = 1;
+					} 
+					pOther.PlayerHit(this);
+					return;
+				}
+
+				if((heightDifference > pOther.heightHitbox) || heightDifference < 0f){
+					return; // Do nothing because the ball went over or under the player
+				} else if(pOther.aState.state == ActionStates.catching && pOther.isFacingBall()){
+					if(state != BallState.thrown){
+						pOther.shieldEarned();
+					}
+					StateHeld(pOther);
+				} else {
+					if(pOther.fieldPosition == 1){
+						if(!pOther.isShielded || !pOther.isFacingBall()){
+							pOther.PlayerHit(this);
+						} else {
+							// Do nothing, the player is shielded and facing the ball
+							// The shield will take care of itself
+						}
+					}
+					VerticalSurfaceBounce(other);
+				}
+			} else if(othersLayer == 11){
+				VerticalSurfaceBounce(other);
+			} else if(othersLayer == 14){ // The ball has hit a shield!
+				BallOnBallAction(other); 
+			}
+		} else if (state == BallState.free){
+			if(pOther){
+				if(pOther.aState.state == ActionStates.catching && pOther.isFacingBall()){
+					StateHeld(pOther);
+				}
+			} else {
+				VerticalSurfaceBounce(other);
+			}
+		}
+	}
+
+	void WaveBallLogic(){
+		Vector3 waveVec = new Vector3(vel.x , Mathf.Sin((Time.time - timeStamp)* 10.0f + Mathf.PI / 2f), 0f);
+		vel = waveVec;
+	}
+
+	void WreckingBallLogic(){
+		mode = PowerMode.wreckingball;
+		if(wreckingMode == 1){
+			float t = Time.time - timeStamp;
+			height += t * 3.0f;
+			if(height > 24f){
+				state = BallState.free;
+				mode = PowerMode.none;
+				wreckingMode = 0;
+			}
+		} else { return; }
+	}
+	
 	void ResetBall(){
 		this.transform.position = new Vector3(0f, -1f, -1f);
 	}

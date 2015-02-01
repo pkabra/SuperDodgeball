@@ -24,9 +24,12 @@ public class Player : MonoBehaviour {
 	public Vector3 pos0 = Vector3.zero; // previous frame position
 	public Vector3 vel = Vector3.zero;
 	public float hp = 48f;
+	public ActionStates myAstate = ActionStates.none;
+	public KineticStates myKState = KineticStates.none;
+	public int specialAbilityID = 0;
 	public float height = 0.0f; // height above ground plane
 	public float heightVel = 0f;
-	public float heightHitbox = 3f;
+	public float heightHitbox = 4f;
 	public float bounciness = 0.85f;
 
 	public float lastH = 0f;
@@ -108,15 +111,15 @@ public class Player : MonoBehaviour {
 			}
 		}
 	}
-	
-	void OnTriggerStay(Collider other){
-		if(other.gameObject.tag == "InfieldBoundary"){
-			if(kState.state == KineticStates.walk && !goneOverboard)
-			{
-				InfieldCollideLogic(other);
-			}
-		}
-	}
+//	
+//	void OnTriggerStay(Collider other){
+//		if(other.gameObject.tag == "InfieldBoundary"){
+//			if(kState.state == KineticStates.walk && !goneOverboard)
+//			{
+//				InfieldCollideLogic(other);
+//			}
+//		}
+//	}
 	
 	// Handle Player Movement
 	public void Movement (float h, float v) {
@@ -422,6 +425,17 @@ public class Player : MonoBehaviour {
 				PassTargetingLogicTeam2();
 			}
 			GameEngine.ball.height = height * 0.5f + 1.3f;
+			Vector3 pos = transform.position;
+			if (facing == PlayerFacing.west || facing == PlayerFacing.northWest || facing == PlayerFacing.southWest) {
+				pos.x -= GameEngine.ball.heldOffsetX;
+			} else {
+				pos.x += GameEngine.ball.heldOffsetX;
+			}
+			//pos.y += holder.height * 0.2f + 0.5f;
+			GameEngine.ball.transform.position = pos;
+			//height = holder.height * 0.5f + 1.3f;
+
+
 		}
 
 		if (kState.state == KineticStates.crouch) {
@@ -454,6 +468,17 @@ public class Player : MonoBehaviour {
 		spriteHolderTrans.localPosition = heightOffset;
 		//shieldHolder.transform.position = spriteHolderTrans.position;
 		animator.SetInteger(aniStateID, (int)this.aState.state);
+
+		if(fieldPosition == 1){
+			if(transform.position.x < -12.25f){
+				transform.position = new Vector3(-12.25f, transform.position.y, -1f);
+			} else if(transform.position.x > 12.25f){
+				transform.position = new Vector3(12.25f, transform.position.y, -1f);
+			}
+		}
+
+		myAstate = aState.state;
+		myKState = kState.state;
 	}
 
 	public void Jump(float h) {
@@ -548,7 +573,7 @@ public class Player : MonoBehaviour {
 				} else if (vel.y < 0f){ // hit top
 					hitOnTop = true;
 				} else {
-					//print ("Player is not moving, should not hit boundary");
+					print ("Player is not moving, should not hit boundary");
 				}
 				//print (desiredPos);
 			} else { // travel is diagonal
@@ -556,7 +581,7 @@ public class Player : MonoBehaviour {
 				
 				//Determine correct origin and direction for ray
 				Vector3 dir = vel.normalized;
-				Vector3 origin = pos0;
+				Vector3 origin = this.transform.position - dir * 0.1f;
 				bool rayNeeded = false;
 				if(vel.x > 0f){
 					if(vel.y > 0f){ //NE
@@ -631,12 +656,12 @@ public class Player : MonoBehaviour {
 			}
 			
 			if(hitOnLeft){ // Hit left side 
-				print ("hit left");
+				//print ("hit left");
 				xLock = true;
 				vel.x = 0f;
 				desiredPos.x = other.transform.position.x - (boundaryHalfWidth + thisHalfWidth + 0.01f);
 			} else if (hitOnRight){ // Hit right side
-				print ("hit right");
+				//print ("hit right");
 				xLock = true;
 				vel.x = 0f;
 				desiredPos.x = other.transform.position.x + (boundaryHalfWidth + thisHalfWidth + 0.01f);
@@ -652,10 +677,10 @@ public class Player : MonoBehaviour {
 				desiredPos.y = other.transform.position.y + (boundaryHalfHeight + thisHalfHeight + 0.01f);
 			}
 			
-			if(Vector3.Distance(this.transform.position,pos0) <= Vector3.Distance(desiredPos,pos0)){
-				desiredPos.x = this.transform.position.x; // helps resolve colliding with more than one collider
-				desiredPos.y = this.transform.position.y;
-			}
+//			if( Vector3.Distance(this.transform.position,pos0) < Vector3.Distance(desiredPos,pos0)){
+//				desiredPos.x = this.transform.position.x; // helps resolve colliding with more than one collider
+//				desiredPos.y = this.transform.position.y;
+//			}
 
 			this.transform.position = desiredPos;
 			
@@ -773,16 +798,16 @@ public class Player : MonoBehaviour {
 	}
 
 	public bool isFacingBall(){
-		float xDirOfBall = GameEngine.ball.transform.position.x - this.transform.position.x;
+		float xDirOfBall = GameEngine.ball.vel.x;
 
-		if(xDirOfBall > 0f){
+		if(xDirOfBall < 0.0f){
 			if (this.facing == PlayerFacing.northEast || this.facing == PlayerFacing.east ||
 			    this.facing == PlayerFacing.southEast){
 				return true;
 			} else {
 				return false;
 			}
-		} else if (xDirOfBall < 0f){
+		} else if (xDirOfBall > 0.0f){
 			if (this.facing == PlayerFacing.northWest || this.facing == PlayerFacing.west ||
 			    this.facing == PlayerFacing.southWest){
 				return true;
