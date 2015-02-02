@@ -2,7 +2,7 @@
 using System.Collections;
 
 public enum BallState { rest, free, held, pass, thrown, powered, superpowered };
-public enum PowerMode { none, fastball, wreckingball, wave, breaker, vampire};
+public enum PowerMode { none, fastball, wreckingball, wave, breaker, tsunami, corkscrew, vampire};
 public enum Trajectory { none, jump, low, mid, EastWestHigh, NorthSouthHigh };
 
 public class Ball : MonoBehaviour {
@@ -75,7 +75,7 @@ public class Ball : MonoBehaviour {
 			if(trajectory == Trajectory.jump){
 				if(!JumpThrowLogic())return;
 			}
-			if(state == BallState.powered){
+			if(state == BallState.powered || state == BallState.superpowered){
 				PowerBallLogic();
 			}
 			this.transform.position += vel * throwSpeedMult * Time.fixedDeltaTime;
@@ -89,7 +89,7 @@ public class Ball : MonoBehaviour {
 		// Block for things that should always happen
 		Vector3 heightOffset = new Vector3( 0, height * YCompOfZ, (transform.position.y - 0.2f) * 0.001f); // z portion orders sprites
 		spriteHolderTrans.localPosition = heightOffset;
-		animator.SetInteger(aniStateID, (int)this.state);
+		animator.SetInteger(aniStateID, (int)this.mode);
 		
 	}
 	
@@ -451,6 +451,15 @@ public class Ball : MonoBehaviour {
 		vel = waveVec;
 	}
 
+	void TsunamiLogic(){
+		height = Mathf.Sin((Time.time - timeStamp)* 10.0f + Mathf.PI / 2f) + 1.3f;
+	}
+
+	void CorkscrewLogic(){
+		WaveBallLogic();
+		TsunamiLogic();
+	}
+
 	void WreckingBallLogic(){
 		mode = PowerMode.wreckingball;
 		if(wreckingMode == 1){
@@ -476,6 +485,12 @@ public class Ball : MonoBehaviour {
 			break;
 		case PowerMode.breaker:
 			BreakerballLogic();
+			break;
+		case PowerMode.tsunami:
+			TsunamiLogic();
+			break;
+		case PowerMode.corkscrew:
+			CorkscrewLogic();
 			break;
 		default:
 			print ("Didn't do anything in PowerBallLogic()");
@@ -530,6 +545,12 @@ public class Ball : MonoBehaviour {
 				break;
 			case PowerMode.wreckingball:
 				speed = 1.5f;
+				break;
+			case PowerMode.tsunami:
+				speed = 1.5f;
+				break;
+			case PowerMode.corkscrew:
+				speed = 1.75f;
 				break;
 			default:
 				print ("Ran out of powermodes in getThrowSpeed()");

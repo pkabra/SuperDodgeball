@@ -285,6 +285,7 @@ public class Player : MonoBehaviour {
 		if(kState.state == KineticStates.run){
 			GameEngine.ball.state = BallState.powered;
 			GameEngine.ball.mode = GroundAbility;
+			GameEngine.ball.animator.SetInteger(aniStateID, (int)GroundAbility);
 		} else if(kState.state == KineticStates.walk){
 			GameEngine.ball.state = BallState.thrown;
 		} else if (kState.state == KineticStates.runjump) {
@@ -293,6 +294,7 @@ public class Player : MonoBehaviour {
 			if (jumpVelY < 5f && jumpVelY > -5f) {
 				GameEngine.ball.state = BallState.superpowered;
 				GameEngine.ball.mode = JumpAbility;
+				GameEngine.ball.animator.SetInteger(aniStateID, (int)JumpAbility);
 			} else {
 				GameEngine.ball.state = BallState.thrown;
 			}
