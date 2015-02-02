@@ -2,7 +2,7 @@
 using System.Collections;
 
 public enum BallState { rest, free, held, pass, thrown, powered, superpowered };
-public enum PowerMode { none, fastball, wreckingball, wave, vampire};
+public enum PowerMode { none, fastball, wreckingball, wave, breaker, vampire};
 public enum Trajectory { none, jump, low, mid, EastWestHigh, NorthSouthHigh };
 
 public class Ball : MonoBehaviour {
@@ -37,6 +37,7 @@ public class Ball : MonoBehaviour {
 	private float timeStamp = 0.0f;
 	private int throwerTeam = 0;
 	private int wreckingMode = 0;
+	private int breakerMode = 0;
 	public Vector3 prevPos = Vector3.zero;
 	private Vector3 targetPos = Vector3.zero;
 
@@ -70,12 +71,12 @@ public class Ball : MonoBehaviour {
 				FreeBallinLogic();
 				this.transform.position += vel * Time.fixedDeltaTime;
 			}
-		} else if(state == BallState.thrown || state == BallState.powered ){
+		} else if(state == BallState.thrown || state == BallState.powered || state == BallState.superpowered){
 			if(trajectory == Trajectory.jump){
 				if(!JumpThrowLogic())return;
 			}
 			if(state == BallState.powered){
-				WreckingBallLogic();
+				PowerBallLogic();
 			}
 			this.transform.position += vel * throwSpeedMult * Time.fixedDeltaTime;
 		} else if(state == BallState.free){
@@ -86,7 +87,7 @@ public class Ball : MonoBehaviour {
 		}
 		
 		// Block for things that should always happen
-		Vector3 heightOffset = new Vector3( 0, height * YCompOfZ, (transform.position.y - 0.2f) * 0.001f);
+		Vector3 heightOffset = new Vector3( 0, height * YCompOfZ, (transform.position.y - 0.2f) * 0.001f); // z portion orders sprites
 		spriteHolderTrans.localPosition = heightOffset;
 		animator.SetInteger(aniStateID, (int)this.state);
 		
@@ -229,7 +230,10 @@ public class Ball : MonoBehaviour {
 		// Bounce off the surface
 		vel = Vector3.Reflect(vel, norm) * 0.8f;
 		state = BallState.free;
-		
+		mode = PowerMode.none;
+		wreckingMode = 0;
+		breakerMode = 0;
+
 		// Added height for bounce off of a player
 		if(other.gameObject.GetComponent<Player>()){
 			heightVel = 10.0f;
@@ -256,6 +260,9 @@ public class Ball : MonoBehaviour {
 		// Put ball at rest if it is moving super slow
 		if(height < 0.05f && (heightVel < 0.38f && heightVel > 0.33f)){
 			state = BallState.rest;
+			mode = PowerMode.none;
+			wreckingMode = 0;
+			breakerMode = 0;
 			height = 0f;
 			heightVel = 0f;
 			if(GameEngine.resetBallOn && (GameEngine.sideline.isBeyondAny(transform.position))){
@@ -455,6 +462,81 @@ public class Ball : MonoBehaviour {
 				wreckingMode = 0;
 			}
 		} else { return; }
+	}
+
+	void PowerBallLogic(){
+		switch(mode){
+		case PowerMode.fastball: 
+			break; // current don't have to do anythinf for this powerthrow
+		case PowerMode.wreckingball: 
+			WreckingBallLogic();
+			break;
+		case PowerMode.wave:
+			WaveBallLogic();
+			break;
+		case PowerMode.breaker:
+			BreakerballLogic();
+			break;
+		default:
+			print ("Didn't do anything in PowerBallLogic()");
+			break;
+		}
+	}
+
+	void BreakerballLogic(){
+		if(breakerMode == 0){
+			timeStamp = Time.time;
+			if(throwerTeam == 1){
+				vel = new Vector3(1.0f, 0f, 0f);
+			} else {
+				vel = new Vector3(-1.0f, 0f, 0f);
+			}
+			breakerMode = 1;
+		}else if(breakerMode == 1){
+			if(Time.time >= (timeStamp + 1.5f)){
+				breakerMode = 2;
+			}
+		}else if(breakerMode == 2){
+			Vector3 dir = targetPos - transform.position;
+			dir.z = 0;
+			vel = dir.normalized * 1.7f;
+			breakerMode = 4;
+		}else {
+			// Do nothing
+		}
+		print (breakerMode);
+	}
+
+	public float getThrowSpeed(){
+		float speed = 0f;
+		if(state == BallState.thrown){
+			if(this.holder.kState.state == KineticStates.run){
+				speed = 1.2f;
+			} else if( this.holder.kState.state == KineticStates.walk){
+				speed = 1.0f;
+			} else {
+				speed = 0.9f;
+			}
+		} else {
+			switch(mode){
+			case PowerMode.breaker:
+				speed = 0.9f;
+				break;
+			case PowerMode.fastball:
+				speed = 1.9f;
+				break;
+			case PowerMode.wave:
+				speed = 1.5f;
+				break;
+			case PowerMode.wreckingball:
+				speed = 1.5f;
+				break;
+			default:
+				print ("Ran out of powermodes in getThrowSpeed()");
+				break;
+			}
+		}
+		return speed;
 	}
 	
 	void ResetBall(){

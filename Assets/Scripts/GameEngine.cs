@@ -45,6 +45,8 @@ public class GameEngine : MonoBehaviour {
 	
 	public static Controller 	player1 = new Controller();
 	public static Controller	player2 = new Controller();
+
+	public static Camera        cam;
 	
 	public static Ball			ball;
 	public static Sideline      sideline;
@@ -59,6 +61,7 @@ public class GameEngine : MonoBehaviour {
 	public static float			gravity = -0.9f;
 	
 	public static bool			resetBallOn = false;
+	public bool                 shieldsEnabled = false;
 	
 	public static StageTypes	stageType = StageTypes.normal;
 	
@@ -70,6 +73,8 @@ public class GameEngine : MonoBehaviour {
 	void Awake () {
 		team1 = new List<Player>();
 		team2 = new List<Player>();
+
+		cam = this.GetComponentInParent<Camera> ();
 		
 		if (GameObject.Find ("Stage").CompareTag("IceStage")) {
 			stageType = StageTypes.ice;

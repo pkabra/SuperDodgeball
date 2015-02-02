@@ -17,47 +17,49 @@ public class KineticState {
 }
 
 public class Player : MonoBehaviour {
-	public bool AIControl = true; // Is this player under AI control?
-	public AIHandler playerAI = null;
-	public bool goneOverboard = false;
+	public bool             AIControl = true; // Is this player under AI control?
+	public AIHandler        playerAI = null;
+	public bool             goneOverboard = false;
 
-	public Vector3 pos0 = Vector3.zero; // previous frame position
-	public Vector3 vel = Vector3.zero;
-	public float hp = 48f;
-	public ActionStates myAstate = ActionStates.none;
-	public KineticStates myKState = KineticStates.none;
-	public int specialAbilityID = 0;
-	public float height = 0.0f; // height above ground plane
-	public float heightVel = 0f;
-	public float heightHitbox = 4f;
-	public float bounciness = 0.85f;
+	public Vector3          pos0 = Vector3.zero; // previous frame position
+	public Vector3          vel = Vector3.zero;
+	public float            hp = 48f;
+	public ActionStates     myAstate = ActionStates.none;
+	public KineticStates    myKState = KineticStates.none;
+	public PowerMode        GroundAbility = PowerMode.none;
+	public PowerMode        JumpAbility = PowerMode.none;
+	public float            height = 0.0f; // height above ground plane
+	public float            heightVel = 0f;
+	public float            heightHitbox = 4f;
+	public float            bounciness = 0.85f;
 
-	public float lastH = 0f;
-	public float lastV = 0f;
+	public float            lastH = 0f;
+	public float            lastV = 0f;
 
-	public KineticState kState = new KineticState();
-	public ActionState aState = new ActionState();
-	public PlayerFacing facing = PlayerFacing.east;
-	public int fieldPosition = 0;
-	public int team = 0;
-	public bool isShielded = false;
+	public KineticState     kState = new KineticState();
+	public ActionState      aState = new ActionState();
+	public PlayerFacing     facing = PlayerFacing.east;
+	public int              fieldPosition = 0;
+	public int              team = 0;
+	public bool             isShielded = false;
+	public bool             goAround = false; // Around the World, Around the WOOOORLD!!!
 
-	public float jumpVelX = 0f;
-	public float jumpVelY = 0f;
+	public float            jumpVelX = 0f;
+	public float            jumpVelY = 0f;
 
-	public Transform spriteHolderTrans = null;
-	private Shield shieldHolder = null;
-	public Animator animator = null;
-	private int aniStateID = 0;
-	public GameObject HPBar = null;
-	private HPUpdaterGUI hpGui = null;
+	public Transform        spriteHolderTrans = null;
+	private Shield          shieldHolder = null;
+	public Animator         animator = null;
+	private int             aniStateID = 0;
+	public GameObject       HPBar = null;
+	private HPUpdaterGUI    hpGui = null;
 
-	public float catchingTime = 0.8f;
-	public float catchAttemptBuffer = 0.3f;
-	public float tryCatchTime = 0f;
-	private bool xLock = false;
-	private bool yLock = false;
-	public bool noBallHit = false;
+	private float           catchingTime = 0.8f;
+	private float           catchAttemptBuffer = 0.3f;
+	private float           tryCatchTime = 0f;
+	private bool            xLock = false;
+	private bool            yLock = false;
+	public bool             noBallHit = false;
 	
 	// Use this for initialization
 	void Start () {
@@ -280,30 +282,26 @@ public class Player : MonoBehaviour {
 	}
 
 	public float ThrowAt(Vector3 targetPos){
-		float throwVel = 0.0f;
 		if(kState.state == KineticStates.run){
-			throwVel = 1.5f;
 			GameEngine.ball.state = BallState.powered;
+			GameEngine.ball.mode = GroundAbility;
 		} else if(kState.state == KineticStates.walk){
-			throwVel = 1.0f;
 			GameEngine.ball.state = BallState.thrown;
 		} else if (kState.state == KineticStates.runjump) {
 			print ("running jump throw!");
 			print (jumpVelY);
 			if (jumpVelY < 5f && jumpVelY > -5f) {
-				throwVel = 1.5f;
 				GameEngine.ball.state = BallState.superpowered;
+				GameEngine.ball.mode = JumpAbility;
 			} else {
-				throwVel = 1f;
 				GameEngine.ball.state = BallState.thrown;
 			}
 		} else {
-			throwVel = 0.9f;
 			GameEngine.ball.state = BallState.thrown;
 		}
 		StateThrowing();
 		StartCoroutine(TempNoCollide(0.15f));
-		return throwVel;
+		return GameEngine.ball.getThrowSpeed();
 	}
 
 	IEnumerator AttemptCatch(){
@@ -388,7 +386,10 @@ public class Player : MonoBehaviour {
 		if (this.kState.state == KineticStates.fall) {
 			PlayerFallLogic();
 			this.transform.position += vel * Time.fixedDeltaTime;
-		}
+			if(this.goAround){
+				AroundTheWorld(); // does a check to see if we need to screen wrap the player's fall
+			}
+		} 
 		
 		if (this.kState.state == KineticStates.jump || this.kState.state == KineticStates.runjump) {
 			JumpLogic();
@@ -531,6 +532,7 @@ public class Player : MonoBehaviour {
 	void PlayerFallLogic() {
 		if(height < 0.05f && (heightVel < 0.1f && heightVel > -0.1f)){
 			kState.state = KineticStates.walk;
+			goAround = false;
 			height = 0f;
 			heightVel = 0f;
 		} else {
@@ -828,5 +830,21 @@ public class Player : MonoBehaviour {
 		shieldHolder.disableShield();
 		isShielded = false;
 		StartCoroutine(TempNoCollide(0.5f));
+	}
+
+	public void AroundTheWorld(){
+		float camLeftLimit = GameEngine.cam.transform.position.x - 7.2f;
+		float camRightLimit = GameEngine.cam.transform.position.x + 7.2f;
+		Vector3 newVec = this.transform.position;
+
+		if(this.transform.position.x < camLeftLimit){
+			newVec.x = camRightLimit;
+			this.height += 5.0f;
+			this.transform.position = newVec;
+		} else if (this.transform.position.x > camRightLimit){
+			newVec.x = camLeftLimit;
+			this.height += 5.0f;
+			this.transform.position = newVec;
+		}
 	}
 }
