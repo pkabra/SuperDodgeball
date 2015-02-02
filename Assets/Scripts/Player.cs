@@ -144,7 +144,7 @@ public class Player : MonoBehaviour {
 				v = 0f;
 			}
 			
-			if (Time.time - kState.startTime < 0.5f || Time.time - aState.startTime < 0.5f) return;
+			if (kState.state != KineticStates.run && (Time.time - kState.startTime < 0.5f || Time.time - aState.startTime < 0.5f)) return;
 			
 			//Store previous position
 			pos0 = this.transform.position;
@@ -259,6 +259,7 @@ public class Player : MonoBehaviour {
 	}
 	
 	public void Crouch() {
+		Movement (0f,0f);
 		kState.state = KineticStates.crouch;
 		kState.startTime = Time.time;
 		heightHitbox = 0.5f;
@@ -283,9 +284,13 @@ public class Player : MonoBehaviour {
 
 	public float ThrowAt(Vector3 targetPos){
 		if(kState.state == KineticStates.run){
-			GameEngine.ball.state = BallState.powered;
-			GameEngine.ball.mode = GroundAbility;
-			GameEngine.ball.animator.SetInteger(aniStateID, (int)GroundAbility);
+			if((Time.time - kState.startTime) > 0.8f && (Time.time - kState.startTime) < 1.4f){
+				GameEngine.ball.state = BallState.powered;
+				GameEngine.ball.mode = GroundAbility;
+				GameEngine.ball.animator.SetInteger(aniStateID, (int)GroundAbility);
+			} else {
+				GameEngine.ball.state = BallState.thrown;
+			}
 		} else if(kState.state == KineticStates.walk){
 			GameEngine.ball.state = BallState.thrown;
 		} else if (kState.state == KineticStates.runjump) {

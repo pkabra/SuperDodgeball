@@ -357,12 +357,13 @@ public class Ball : MonoBehaviour {
 	bool JumpThrowLogic(){
 		float distToTarget = Vector3.Distance(transform.position, targetPos);
 		float offset = height;
-		height = maxHeight * distToTarget / totalTrajDist;
-		heightVel = (height - offset) / Time.fixedDeltaTime;
-		if(heightVel >= 0f){
+		float sign = ((targetPos.x - transform.position.x) * vel.x) > 0f ? 1f : -1f;
+		height = sign * maxHeight * distToTarget / totalTrajDist;
+		if(height <= 0f){
 			heightVel = 8.0f; // This is how hard the ball bounces off the ground
 			vel *= 3.5f; // This is how much velocity the ball maintains after first bounce
 			state = BallState.free;
+			mode = PowerMode.none;
 			this.transform.position += vel * bounciness * Time.fixedDeltaTime;
 			return false;
 		}
@@ -456,8 +457,9 @@ public class Ball : MonoBehaviour {
 	}
 
 	void CorkscrewLogic(){
-		WaveBallLogic();
-		TsunamiLogic();
+		Vector3 waveVec = new Vector3(vel.x , 0.5f * Mathf.Sin((Time.time - timeStamp)* 16.0f + Mathf.PI / 2f), 0f);
+		vel = waveVec;
+		height += Mathf.Sin((Time.time - timeStamp)* 10.0f + Mathf.PI / 2f);
 	}
 
 	void WreckingBallLogic(){

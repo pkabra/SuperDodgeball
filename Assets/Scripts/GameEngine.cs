@@ -84,6 +84,7 @@ public class GameEngine : MonoBehaviour {
 	}
 	
 	void Update () {
+		float myLocalTime = Time.time;
 		if(Input.GetKeyDown(KeyCode.G)){
 			foreach (Player p in team1) {
 				p.shieldEarned();
@@ -104,10 +105,13 @@ public class GameEngine : MonoBehaviour {
 		// left
 		if (player1.player.kState.state == KineticStates.walk || player1.player.kState.state == KineticStates.run) {
 			if(Input.GetKeyDown("a")) {
-				if (Time.time - player1.lastLeftKeyPress < 0.2f) {
+				if (myLocalTime - player1.lastLeftKeyPress < 0.2f) {
+					if(player1.player.kState.state != KineticStates.run){
+						player1.player.kState.startTime = myLocalTime;
+					}
 					player1.player.kState.state = KineticStates.run;
 				}
-				player1.lastLeftKeyPress = Time.time;
+				player1.lastLeftKeyPress = myLocalTime;
 			}
 			if (Input.GetKeyUp("a")) {
 				player1.player.kState.state = KineticStates.walk;
@@ -115,6 +119,9 @@ public class GameEngine : MonoBehaviour {
 			// right
 			if(Input.GetKeyDown("d")) {
 				if (Time.time - player1.lastRightKeyPress < 0.2f) {
+					if(player1.player.kState.state != KineticStates.run){
+						player1.player.kState.startTime = myLocalTime;
+					}
 					player1.player.kState.state = KineticStates.run;
 				}
 				player1.lastRightKeyPress = Time.time;
@@ -129,6 +136,9 @@ public class GameEngine : MonoBehaviour {
 		if (player2.player.kState.state == KineticStates.walk || player2.player.kState.state == KineticStates.run) {
 			if(Input.GetKeyDown("left")) {
 				if (Time.time - player2.lastLeftKeyPress < 0.2f) {
+					if(player2.player.kState.state != KineticStates.run){
+						player2.player.kState.startTime = Time.time;
+					}
 					player2.player.kState.state = KineticStates.run;
 				}
 				player2.lastLeftKeyPress = Time.time;
@@ -139,6 +149,9 @@ public class GameEngine : MonoBehaviour {
 			// right
 			if(Input.GetKeyDown("right")) {
 				if (Time.time - player2.lastRightKeyPress < 0.2f) {
+					if(player2.player.kState.state != KineticStates.run){
+						player2.player.kState.startTime = Time.time;
+					}
 					player2.player.kState.state = KineticStates.run;
 				}
 				player2.lastRightKeyPress = Time.time;
