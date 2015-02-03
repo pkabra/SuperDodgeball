@@ -62,13 +62,11 @@ public class GameEngine : MonoBehaviour {
 	
 	public static bool			resetBallOn = false;
 	public bool                 shieldsEnabled = false;
-	
-	public static StageTypes	stageType = StageTypes.normal;
-	
-	//private int temp = 0; // used for printing only once per second in some places
-	
-	
-	
+
+	public bool					singlePlayer = false;
+	public static bool 			limitTeam2AI = false;
+	public static ComputerOpponent	computer;
+
 	// Use this for initialization
 	void Awake () {
 		team1 = new List<Player>();
@@ -76,10 +74,9 @@ public class GameEngine : MonoBehaviour {
 
 		cam = this.GetComponentInParent<Camera> ();
 		
-		if (GameObject.Find ("Stage").CompareTag("IceStage")) {
-			stageType = StageTypes.ice;
-		} else {
-			stageType = StageTypes.normal;
+		if (singlePlayer) {
+			computer = GameObject.Find ("Team2Container").GetComponent<ComputerOpponent>();
+			limitTeam2AI = true;
 		}
 	}
 	
@@ -93,7 +90,7 @@ public class GameEngine : MonoBehaviour {
 				p.shieldEarned();
 			}
 		}
-
+		
 		if (player1.player == null) {
 			player1.ChangeControlTo(team1[0]);
 		}
@@ -104,7 +101,7 @@ public class GameEngine : MonoBehaviour {
 		//// Player 1 double tap detection
 		// left
 		if (player1.player.kState.state == KineticStates.walk || player1.player.kState.state == KineticStates.run) {
-			if(Input.GetKeyDown("a")) {
+			if(Input.GetKeyDown("a") || (Input.GetKeyDown(KeyCode.LeftArrow) && singlePlayer)) {
 				if (myLocalTime - player1.lastLeftKeyPress < 0.2f) {
 					if(player1.player.kState.state != KineticStates.run){
 						player1.player.kState.startTime = myLocalTime;
@@ -113,11 +110,11 @@ public class GameEngine : MonoBehaviour {
 				}
 				player1.lastLeftKeyPress = myLocalTime;
 			}
-			if (Input.GetKeyUp("a")) {
+			if (Input.GetKeyUp("a") || (Input.GetKeyUp(KeyCode.LeftArrow) && singlePlayer)) {
 				player1.player.kState.state = KineticStates.walk;
 			}
 			// right
-			if(Input.GetKeyDown("d")) {
+			if(Input.GetKeyDown("d") || (Input.GetKeyDown(KeyCode.RightArrow) && singlePlayer)) {
 				if (Time.time - player1.lastRightKeyPress < 0.2f) {
 					if(player1.player.kState.state != KineticStates.run){
 						player1.player.kState.startTime = myLocalTime;
@@ -126,7 +123,7 @@ public class GameEngine : MonoBehaviour {
 				}
 				player1.lastRightKeyPress = Time.time;
 			}
-			if (Input.GetKeyUp("d")) {
+			if (Input.GetKeyUp("d") || (Input.GetKeyDown(KeyCode.RightArrow) && singlePlayer)) {
 				player1.player.kState.state = KineticStates.walk;
 			}
 		}
@@ -134,7 +131,7 @@ public class GameEngine : MonoBehaviour {
 		//// Player 2 double tap detection
 		// left
 		if (player2.player.kState.state == KineticStates.walk || player2.player.kState.state == KineticStates.run) {
-			if(Input.GetKeyDown("left")) {
+			if(Input.GetKeyDown("left") && !singlePlayer) {
 				if (Time.time - player2.lastLeftKeyPress < 0.2f) {
 					if(player2.player.kState.state != KineticStates.run){
 						player2.player.kState.startTime = Time.time;
@@ -143,11 +140,11 @@ public class GameEngine : MonoBehaviour {
 				}
 				player2.lastLeftKeyPress = Time.time;
 			}
-			if (Input.GetKeyUp("left")) {
+			if (Input.GetKeyUp("left") && !singlePlayer) {
 				player2.player.kState.state = KineticStates.walk;
 			}
 			// right
-			if(Input.GetKeyDown("right")) {
+			if(Input.GetKeyDown("right") && !singlePlayer) {
 				if (Time.time - player2.lastRightKeyPress < 0.2f) {
 					if(player2.player.kState.state != KineticStates.run){
 						player2.player.kState.startTime = Time.time;
@@ -156,7 +153,7 @@ public class GameEngine : MonoBehaviour {
 				}
 				player2.lastRightKeyPress = Time.time;
 			}
-			if (Input.GetKeyUp("right")) {
+			if (Input.GetKeyUp("right") && !singlePlayer) {
 				player2.player.kState.state = KineticStates.walk;
 			}
 		}
@@ -164,58 +161,67 @@ public class GameEngine : MonoBehaviour {
 		//Controls
 		player1.h = Input.GetAxisRaw("Horizontal");
 		player1.y = Input.GetAxisRaw("Vertical");
-		if( Input.GetKeyDown (KeyCode.X) ){
+		if (singlePlayer) {
+			if (Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.RightArrow)) {
+				player1.h = Input.GetAxisRaw("Horizontal2");
+			}
+			if (Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.DownArrow)) {
+				player1.y = Input.GetAxisRaw("Vertical2");
+			}
+		}
+		if( Input.GetKeyDown (KeyCode.X) || (Input.GetKeyDown(KeyCode.Period) && singlePlayer) ){
 			player1.b = true;
 			player1.lastBPress = Time.time;
-			if (Input.GetKey (KeyCode.Comma) && (Time.time - player1.lastAPress) < 0.01f) {
+			if ((Input.GetKey (KeyCode.Z) || (Input.GetKey(KeyCode.Comma) && singlePlayer)) && (Time.time - player1.lastAPress) < 0.01f) {
 				player1.a = true;
 			}
 		}
-		if( Input.GetKeyDown (KeyCode.Z) ){
+		if( Input.GetKeyDown (KeyCode.Z) || (Input.GetKeyDown(KeyCode.Comma) && singlePlayer) ){
 			player1.a = true;
 			player1.lastAPress = Time.time;
-			if (Input.GetKey(KeyCode.Period) && (Time.time - player1.lastBPress) < 0.01f) {
+			if ((Input.GetKey(KeyCode.X) || (Input.GetKey(KeyCode.Period) && singlePlayer)) && (Time.time - player1.lastBPress) < 0.01f) {
 				player1.b = true;
 			}
 		}
 		
-		player2.h = Input.GetAxisRaw("Horizontal2");
-		player2.y = Input.GetAxisRaw("Vertical2");
-		if( Input.GetKeyDown (KeyCode.Period) ){
-			player2.b = true;
-			player2.lastBPress = Time.time;
-			if (Input.GetKey (KeyCode.Comma) && (Time.time - player2.lastAPress) < 0.01f) {
-				player2.a = true;
-			}
-		}
-		if( Input.GetKeyDown (KeyCode.Comma) ){
-			player2.a = true;
-			player2.lastAPress = Time.time;
-			if (Input.GetKey(KeyCode.Period) && (Time.time - player2.lastBPress) < 0.01f) {
+		if (!singlePlayer) {
+			player2.h = Input.GetAxisRaw("Horizontal2");
+			player2.y = Input.GetAxisRaw("Vertical2");
+			if( Input.GetKeyDown (KeyCode.Period) ){
 				player2.b = true;
+				player2.lastBPress = Time.time;
+				if (Input.GetKey (KeyCode.Comma) && (Time.time - player2.lastAPress) < 0.01f) {
+					player2.a = true;
+				}
+			}
+			if( Input.GetKeyDown (KeyCode.Comma) ){
+				player2.a = true;
+				player2.lastAPress = Time.time;
+				if (Input.GetKey(KeyCode.Period) && (Time.time - player2.lastBPress) < 0.01f) {
+					player2.b = true;
+				}
 			}
 		}
 		
-		if (player1.player.transform.position.x > -0.193f && player1.player.fieldPosition == 1) {
-			player1.player.goneOverboard = true;
-		} else {
-			player1.player.goneOverboard = false;
-		}
-		
-		if (player2.player.transform.position.x < 0.193f && player2.player.fieldPosition == 1) {
-			player2.player.goneOverboard = true;
-		} else {
-			player2.player.goneOverboard = false;
-		}
-		
-		if (Input.GetKeyDown(KeyCode.Tab)) {
-			if (Application.loadedLevelName ==  "icestage") {
-				Application.LoadLevel("classic_japan");
-			} else {
-				Application.LoadLevel("icestage");
+		foreach (Player player in team1) {
+			if ((player.transform.position.x > -0.193f ||
+			     sideline.isBeyondLeft(player.transform.position))
+			    && player.fieldPosition == 1) {
+				player.goneOverboard = true;
+			} else if(!player.playerAI.inReturnMode) {
+				player.goneOverboard = false;
 			}
 		}
 		
+		foreach (Player player in team2) {
+			if ((player.transform.position.x < 0.193f ||
+			     sideline.isBeyondRight(player.transform.position))
+			    && player.fieldPosition == 1) {
+				player.goneOverboard = true;
+			} else if(!player.playerAI.inReturnMode) {
+				player.goneOverboard = false;
+			}
+		}
 	}
 	
 	// Update is called once per frame

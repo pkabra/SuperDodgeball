@@ -8,6 +8,10 @@ public class AIHandler : MonoBehaviour {
 	public float leftEdge = -7.5f;
 	public float rightEdge = 7.3f;
 	
+	public bool inReturnMode = false;
+	bool returnFromSide = false;
+	int extraSteps = 20;
+	
 	// Use this for initialization
 	void Start () {
 		player = gameObject.GetComponent<Player>();
@@ -18,6 +22,7 @@ public class AIHandler : MonoBehaviour {
 		if (!player.AIControl) return;
 		
 		if (player.fieldPosition == 1) {
+			if (player.team == 2 && GameEngine.limitTeam2AI) return;
 			HandleInfieldPlayer();
 		} else {
 			HandleSidelinePlayer();
@@ -137,17 +142,47 @@ public class AIHandler : MonoBehaviour {
 			player.kState.state = KineticStates.walk;
 		}
 		
+		inReturnMode = true;
+		
 		if (player.team == 1) {
-			if (player.transform.position.x < 1f && player.facing == PlayerFacing.east) {
+			if (GameEngine.sideline.isBeyondLeft(player.transform.position)) {
+				returnFromSide = true;
 				player.Movement(1f, 0f);
+			} else if (returnFromSide) {
+				extraSteps--;
+				player.Movement(1f, 0f);
+				if (extraSteps == 0) {
+					returnFromSide = false;
+					inReturnMode = false;
+					extraSteps = 20;
+				}
 			} else {
-				player.Movement(-1f, 0f);
+				if (player.transform.position.x < 1f && player.facing == PlayerFacing.east) {
+					player.Movement(1f, 0f);
+				} else if(player.transform.position.x > 0.193) {
+					player.Movement(-1f, 0f);
+				} else {
+					inReturnMode = false;
+				}
 			}
 		} else {
-			if (player.transform.position.x > -1f && player.facing == PlayerFacing.west) {
+			if (GameEngine.sideline.isBeyondRight(player.transform.position)) {
+				returnFromSide = true;
 				player.Movement(-1f, 0f);
+			} else if (returnFromSide) {
+				extraSteps--;
+				player.Movement(-1f, 0f);
+				if (extraSteps == 0) {
+					returnFromSide = false;
+					inReturnMode = false;
+					extraSteps = 20;
+				}
 			} else {
-				player.Movement(1f, 0f);
+				if (player.transform.position.x > -1f && player.facing == PlayerFacing.west) {
+					player.Movement(-1f, 0f);
+				} else {
+					player.Movement(1f, 0f);
+				}
 			}
 		}
 	}

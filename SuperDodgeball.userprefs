@@ -1,8 +1,13 @@
 ﻿<Properties>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="MonoDevelop.Default" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Scripts/StageSelect.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Scripts\Player.cs">
     <Files>
-      <File FileName="Assets/Scripts/StageSelect.cs" Line="103" Column="1" />
+      <File FileName="Assets\Scripts\ComputerOpponent.cs" Line="178" Column="1" />
+      <File FileName="Assets\Scripts\Player.cs" Line="228" Column="88" />
+      <File FileName="Assets\Scripts\StageSelect.cs" Line="103" Column="1" />
+      <File FileName="Assets\Scripts\GameEngine.cs" Line="225" Column="3" />
+      <File FileName="Assets\Scripts\AIHandler.cs" Line="11" Column="35" />
+      <File FileName="Assets\Scripts\SuperCamera.cs" Line="60" Column="1" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>

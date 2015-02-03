@@ -5,6 +5,8 @@ using System.Collections.Generic;
 public enum KineticStates{none, stand, walk, run, crouch, jump ,runjump, fall, stun};
 public enum ActionStates{none, throwing, catching, passing, holding};
 public enum PlayerFacing{northEast, east, southEast, southWest, west, northWest};
+public enum AnimationState{Standing, StandingNorth, StandingSouth, Walking, Running,
+	Throwing, Passing, Crouching, Jumping, JumpThrowing, Falling, Laying};
 
 public class ActionState {
 	public ActionStates state = ActionStates.none;
@@ -145,7 +147,7 @@ public class Player : MonoBehaviour {
 				v = 0f;
 			}
 			
-			if (Time.time - kState.startTime < 0.5f || Time.time - aState.startTime < 0.5f) return;
+			if (kState.state != KineticStates.run && (Time.time - kState.startTime < 0.5f || Time.time - aState.startTime < 0.5f)) return;
 			
 			//Store previous position
 			pos0 = this.transform.position;
@@ -223,6 +225,7 @@ public class Player : MonoBehaviour {
 	}
 	
 	public void PickupBall() {
+		if (kState.state != KineticStates.walk && kState.state != KineticStates.run) return; 
 		Ball theBall = GameEngine.ball;
 		float heightDifference = theBall.height - this.height; 
 		float delta = Vector3.Distance(transform.position, theBall.transform.position);
