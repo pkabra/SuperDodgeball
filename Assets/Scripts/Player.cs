@@ -131,6 +131,7 @@ public class Player : MonoBehaviour {
 		lastH = h;
 		lastV = v;
 		
+		Vector3 pos1 = transform.position;
 		if (fieldPosition != 1) {
 			HandleSidelineMovement(h, v);
 		} else {
@@ -144,46 +145,18 @@ public class Player : MonoBehaviour {
 				v = 0f;
 			}
 			
-			if (kState.state != KineticStates.run && (Time.time - kState.startTime < 0.5f || Time.time - aState.startTime < 0.5f)) return;
+			if (Time.time - kState.startTime < 0.5f || Time.time - aState.startTime < 0.5f) return;
 			
 			//Store previous position
 			pos0 = this.transform.position;
 			
 			// Movement
 			if (kState.state == KineticStates.run) {
-				if (GameEngine.stageType == StageTypes.ice) {
-					if (h > 0f) {
-						vel.x += Mathf.Min(6f, (h * 6f * 0.1f));
-					} else if (h < 0f){
-						vel.x += Mathf.Max(-6f, (h * 6f * 0.1f));
-					} else {
-						vel.x = (vel.x > -0.05f && vel.x < 0.05f) ? 0f : vel.x + vel.x * -0.1f;
-					}
-					vel.y = v * 1f;
-				} else {
-					vel.x = h * 6f;
-					vel.y = v * 1f;
-				}
+				vel.x = h * 6f;
+				vel.y = v * 1f;
 			} else {
-				if (GameEngine.stageType == StageTypes.ice) {
-					if (h > 0f) {
-						vel.x += Mathf.Min(2f, (h * 2f * 0.1f));
-					} else if (h < 0f){
-						vel.x += Mathf.Max(-2f, (h * 2f * 0.1f));
-					} else {
-						vel.x = (vel.x > -0.05f && vel.x < 0.05f) ? 0f : vel.x + vel.x * -0.1f;
-					}
-					if (v > 0f) {
-						vel.y += Mathf.Min(2f, (v * 2f * 0.1f));
-					} else if (v < 0f){
-						vel.y += Mathf.Max(-2f, (v * 2f * 0.1f));
-					} else {
-						vel.y = (vel.y > -0.05f && vel.y < 0.05f) ? 0f : vel.y + vel.y * -0.1f;
-					}
-				} else {
-					vel.x = h * 2f;
-					vel.y = v * 2f;
-				}
+				vel.x = h * 2f;
+				vel.y = v * 2f;
 			}
 		}
 		
@@ -218,6 +191,9 @@ public class Player : MonoBehaviour {
 				}
 			}
 		}
+		
+		pos1 += vel * Time.fixedDeltaTime;
+		transform.position = pos1;
 	}
 	
 	public void HandleSidelineMovement(float h, float v) {
@@ -400,30 +376,6 @@ public class Player : MonoBehaviour {
 		
 		if (this.kState.state == KineticStates.jump || this.kState.state == KineticStates.runjump) {
 			JumpLogic();
-		}
-
-		if (kState.state == KineticStates.walk || kState.state == KineticStates.run) {
-			Vector3 pos1 = transform.position;
-			if (lastH < 0.0001f && lastH > -0.0001f && GameEngine.stageType == StageTypes.ice) {
-				vel.x = (vel.x > -0.05f && vel.x < 0.05f) ? 0f : vel.x + vel.x * -0.1f;
-			}
-			if (lastV < 0.0001f && lastV > -0.0001f && GameEngine.stageType == StageTypes.ice) {
-				vel.y = (vel.y > -0.05f && vel.y < 0.05f) ? 0f : vel.y + vel.y * -0.1f;
-			}
-			
-			pos1 += vel * Time.fixedDeltaTime;
-			if (fieldPosition == 1) {
-				if(pos1.y > 0.2f){
-					pos1.y = 0.2f;
-				} else if (pos1.y < -3.25f){
-					pos1.y = -3.25f;
-				}
-			}
-			lastV = 0f;
-			lastH = 0f;
-			if (!xLock && !yLock) {
-				transform.position = pos1;
-			}
 		}
 
 		if (this.aState.state == ActionStates.holding) {
@@ -825,6 +777,34 @@ public class Player : MonoBehaviour {
 			}
 		} else {
 			return true;
+		}
+	}
+
+	public void FaceBall() {
+		if (GameEngine.ball.transform.position.x - transform.position.x < 0f) {
+			if (facing == PlayerFacing.east ||
+			    facing == PlayerFacing.northEast ||
+			    facing == PlayerFacing.southEast) {
+				if (GameEngine.ball.transform.position.y > 0.7f) {
+					facing = PlayerFacing.northWest;
+				} else if (GameEngine.ball.transform.position.y < -3.3f) {
+					facing = PlayerFacing.southWest;
+				} else {
+					facing = PlayerFacing.west;
+				}
+			}
+		} else {
+			if (facing == PlayerFacing.west ||
+			    facing == PlayerFacing.northWest ||
+			    facing == PlayerFacing.southWest) {
+				if (GameEngine.ball.transform.position.y > 0.7f) {
+					facing = PlayerFacing.northEast;
+				} else if (GameEngine.ball.transform.position.y < -3.3f) {
+					facing = PlayerFacing.southEast;
+				} else {
+					facing = PlayerFacing.east;
+				}
+			}
 		}
 	}
 

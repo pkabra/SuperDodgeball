@@ -28,19 +28,35 @@ public class AIHandler : MonoBehaviour {
 		// Handle tactics for infield players
 		if (GameEngine.ball.holder && GameEngine.ball.holder.team != player.team) {
 			// Run away!
+			float runPos = 0f;
+			float h = 0f;
+			float v = 0f;
 			if (player.team == 1) {
-				if (player.transform.position.x > leftEdge) {
+				if (GameEngine.ball.holder.fieldPosition == 4) {
+					runPos = leftEdge + 2f;
+				} else {
+					runPos = leftEdge;
+				}
+				
+				if (player.transform.position.x > runPos) {
 					player.Movement(-1f, 0f);
 				} else {
-					player.facing = PlayerFacing.east;
+					player.FaceBall();
 				}
 			} else {
-				if (player.transform.position.x < rightEdge) {
+				if (GameEngine.ball.holder.fieldPosition == 4) {
+					runPos = rightEdge - 2f;
+				} else {
+					runPos = rightEdge;
+				}
+				
+				if (player.transform.position.x < runPos) {
 					player.Movement(1f, 0f);
 				} else {
-					player.facing = PlayerFacing.west;
+					player.FaceBall();
 				}
 			}
+			player.Movement(h, v);
 		}
 	}
 	
@@ -74,9 +90,9 @@ public class AIHandler : MonoBehaviour {
 			           && player.fieldPosition == 4) {
 				distance = ball.transform.position.y - player.transform.position.y;
 				if (distance < -0.2f) {
-					player.Movement(-1f, 0f);
+					player.Movement(0f, -1f);
 				} else if (distance > 0.2f){
-					player.Movement(1f, 0f);
+					player.Movement(0f, 1f);
 				} else {
 					player.PickupBall();
 				}
@@ -106,9 +122,9 @@ public class AIHandler : MonoBehaviour {
 			           && player.fieldPosition == 4) {
 				distance = ball.transform.position.y - player.transform.position.y;
 				if (distance < -0.2f) {
-					player.Movement(-1f, 0f);
+					player.Movement(0f, -1f);
 				} else if (distance > 0.2f){
-					player.Movement(1f, 0f);
+					player.Movement(0f, 1f);
 				} else {
 					player.PickupBall();
 				}

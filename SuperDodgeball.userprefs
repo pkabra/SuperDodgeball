@@ -1,13 +1,8 @@
 ﻿<Properties>
-  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Scripts\Player.cs">
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="MonoDevelop.Default" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Scripts/StageSelect.cs">
     <Files>
-      <File FileName="Assets\Scripts\GameEngine.cs" Line="154" Column="7" />
-      <File FileName="Assets\Scripts\Player.cs" Line="287" Column="84" />
-      <File FileName="Assets\Scripts\Shield.cs" Line="1" Column="1" />
-      <File FileName="Assets\Scripts\Ball.cs" Line="535" Column="18" />
-      <File FileName="Assets\Scripts\Sideline.cs" Line="1" Column="1" />
-      <File FileName="Assets\Scripts\SuperCamera.cs" Line="1" Column="1" />
+      <File FileName="Assets/Scripts/StageSelect.cs" Line="103" Column="1" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
