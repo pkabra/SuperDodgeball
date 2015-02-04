@@ -13,6 +13,7 @@ public class Ken : MonoBehaviour {
 	public bool		initThrow = false;
 	
 	public GameObject ballPrefab = null;
+	public RuntimeAnimatorController   hadoukenAnimator;
 	
 	public float kenStateChangeTime = 0f;
 	
@@ -29,7 +30,8 @@ public class Ken : MonoBehaviour {
 		}
 		
 		if (Input.GetKey(KeyCode.H) && (Time.time - lastBallThrow > 1f)) {
-			Fire ();
+//			Fire ();
+			Hadouken();
 		}
 		
 		List<Ball> ballsToDelete = new List<Ball>();
@@ -41,7 +43,6 @@ public class Ken : MonoBehaviour {
 		
 		foreach(Ball b in ballsToDelete) {
 			GameEngine.ballsack.Remove(b);
-			if (GameEngine.ball == b) GameEngine.ball = null;
 			GameObject.Destroy(b.gameObject);
 		}
 		
@@ -96,6 +97,7 @@ public class Ken : MonoBehaviour {
 		GameObject a = Instantiate(ballPrefab) as GameObject;
 		Ball b = a.GetComponent<Ball>();
 		GameEngine.ballsack.Add(b);
+		player.heldBall = b;
 		
 		Vector3 ballPos = transform.position;
 		ballPos.x -= 1f;
@@ -103,13 +105,39 @@ public class Ken : MonoBehaviour {
 		
 		Vector3 shotTarget = GameEngine.player1.player.transform.position;
 		shotTarget.y = transform.position.y;
-		GameEngine.ball = b;
 		
 		player.kenState = KenState.righty;
 		kenStateChangeTime = Time.time;
 		
 		player.ThrowAt(shotTarget);
 		b.ThrowToPos(shotTarget, 1f);
+		lastBallThrow = Time.time;
+	}
+
+	void Hadouken(){
+		if (!GameEngine.player1.player) return;
+		
+		Vector3 StartPos = this.transform.position;
+		StartPos.y += 1.2f;
+		StartPos.x -= 1f;
+		
+		GameObject a = Instantiate(ballPrefab, StartPos, transform.rotation) as GameObject;
+		Ball b = a.GetComponent<Ball>();
+		GameEngine.ballsack.Add(b);
+		player.heldBall = b;
+		
+//		a.GetComponentInChildren<Animator>().runtimeAnimatorController = hadoukenAnimator;
+		
+		Vector3 shotTarget = GameEngine.player1.player.transform.position;
+		shotTarget.y = transform.position.y;
+		
+		player.kenState = KenState.righty;
+		kenStateChangeTime = Time.time;
+		
+		player.ThrowAt(shotTarget);
+		b.ThrowToPos(shotTarget, 1f);
+		b.state = BallState.powered;
+		b.mode = PowerMode.hadouken;
 		lastBallThrow = Time.time;
 	}
 }

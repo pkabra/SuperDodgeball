@@ -1,14 +1,15 @@
 ﻿<Properties>
-  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Scripts\GameEngine.cs">
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="MonoDevelop.Default" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Scripts/Ball.cs">
     <Files>
-      <File FileName="Assets\Scripts\SuperCamera.cs" Line="65" Column="1" />
-      <File FileName="Assets\Scripts\Player.cs" Line="263" Column="24" />
-      <File FileName="Assets\Scripts\ComputerOpponent.cs" Line="116" Column="53" />
-      <File FileName="Assets\Scripts\GameEngine.cs" Line="394" Column="14" />
-      <File FileName="Assets\Scripts\Ball.cs" Line="189" Column="36" />
-      <File FileName="Assets\Scripts\AIHandler.cs" Line="1" Column="1" />
-      <File FileName="c:\Users\Steve\Documents\SDB_repo\SuperDodgeball\Assets\Scripts\Ken.cs" Line="28" Column="22" />
+      <File FileName="Assets/Scripts/Ken.cs" Line="135" Column="21" />
+      <File FileName="Assets/Scripts/GameEngine.cs" Line="179" Column="17" />
+      <File FileName="Assets/Scripts/Ball.cs" Line="431" Column="37" />
+      <File FileName="Assets/Scripts/Player.cs" Line="353" Column="60" />
+      <File FileName="Assets/Scripts/AIHandler.cs" Line="183" Column="67" />
+      <File FileName="Assets/Scripts/ComputerOpponent.cs" Line="48" Column="3" />
+      <File FileName="Assets/Scripts/SuperCamera.cs" Line="29" Column="31" />
+      <File FileName="Assets/Scripts/Sideline.cs" Line="57" Column="15" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>

@@ -54,7 +54,7 @@ public class Sideline : MonoBehaviour {
 	}
 
 	public bool isBeyondTop(Vector3 pos){
-		if(pos.y > 0.55f){
+		if(pos.y > 1.15f){
 			//print ("I'm beyond top boundary");
 			return true;
 		} else {
@@ -63,7 +63,7 @@ public class Sideline : MonoBehaviour {
 	}
 
 	public bool isBeyondBottom(Vector3 pos){
-		if(pos.y < -3.1f){
+		if(pos.y < -3.7f){
 			//print ("I'm beyond bottom boundary");
 			return true;
 		} else {

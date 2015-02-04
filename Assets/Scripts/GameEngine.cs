@@ -49,7 +49,6 @@ public class GameEngine : MonoBehaviour {
 
 	public static Camera        cam;
 	
-	public static Ball			ball;
 	public static Sideline      sideline;
 	public static Player        passTarget;
 	public static Player        team1pos2;
@@ -387,11 +386,19 @@ public class GameEngine : MonoBehaviour {
 					////					ball.height = player1.player.height + 1.3f;
 					//					ball.ThrowToPos(targPos, throwVel1);
 					if(player1.player.aniState != AniState.Windup){
-						ball.ThrowToPos(targPos, 0f);
+						player1.player.heldBall.ThrowToPos(targPos, 0f);
 					}
 				} else {
 					// Pickup
-					if (ball.state != BallState.rest && ball.state != BallState.free) {
+					bool freeBall = false;
+					foreach (Ball b in ballsack) {
+						if (b.state != BallState.rest && b.state != BallState.free) {
+							freeBall = true;
+							break;
+						}
+					}
+
+					if (freeBall) {
 						player1.player.AttemptCatchAtTime(Time.time);
 					} else {
 						player1.player.PickupBall();
@@ -407,6 +414,7 @@ public class GameEngine : MonoBehaviour {
 	}
 	
 	void HandleClassicBehaviour() {
+		Ball tempBall = ballsack[0];
 		//		if(temp % 20 == 1){
 		//			print (passTarget.fieldPosition);
 		//		}
@@ -424,15 +432,22 @@ public class GameEngine : MonoBehaviour {
 		if (player1.player.goneOverboard) {
 			player1.player.playerAI.returnBehindBoundary();
 		} else {
-			if (ball.holder && ball.holder.team == 1) {
-				player1.ChangeControlTo(ball.holder);
-			} else {
+			bool held1 = false;
+			foreach(Ball b in ballsack) {
+				if (b.holder && b.holder.team == 1) {
+					player1.ChangeControlTo(b.holder);
+					held1 = true;
+					break;
+				}
+			}
+
+			if (!held1) {
 				foreach(Player p in team1) {
 					if (player1.player.kState.state != KineticStates.walk) break;
 					if (player1.player.aState.state != ActionStates.none) break;
 					// Calculate distance between ball and player
-					float deltaA = Vector3.Distance(p.transform.position, ball.transform.position);
-					float deltaB = Vector3.Distance(player1.player.transform.position, ball.transform.position);
+					float deltaA = Vector3.Distance(p.transform.position, tempBall.transform.position);
+					float deltaB = Vector3.Distance(player1.player.transform.position, tempBall.transform.position);
 					
 					if (deltaA + 1f < deltaB && Time.time - player1.lastPlayerChangeTime > 2f) {
 						player1.ChangeControlTo(p);
@@ -448,7 +463,7 @@ public class GameEngine : MonoBehaviour {
 				// Pickup or pass
 				if (player1.player.aState.state == ActionStates.holding) {
 					// Pass
-					ball.PassTo(passTarget);
+					player1.player.heldBall.PassTo(passTarget);
 				} else if(player1.player.aState.state == ActionStates.passing) {
 					// Pickup
 					if (Time.time - player1.player.aState.startTime > 0.5f) {
@@ -456,7 +471,7 @@ public class GameEngine : MonoBehaviour {
 						player1.player.PickupBall();
 					}
 				} else if(player1.player.kState.state != KineticStates.fall){
-					if (ball.state == BallState.rest || ball.state == BallState.free) {
+					if (tempBall.state == BallState.rest || tempBall.state == BallState.free) {
 						player1.player.PickupBall();
 					} else {
 						player1.player.Crouch();
@@ -479,11 +494,11 @@ public class GameEngine : MonoBehaviour {
 					////					ball.height = player1.player.height + 1.3f;
 					//					ball.ThrowToPos(targPos, throwVel1);
 					if(player1.player.aniState != AniState.Windup){
-						ball.ThrowToPos(targPos, 0f);
+						player1.player.heldBall.ThrowToPos(targPos, 0f);
 					}
 				} else {
 					// Pickup
-					if (ball.state != BallState.rest && ball.state != BallState.free) {
+					if (tempBall.state != BallState.rest && tempBall.state != BallState.free) {
 						player1.player.AttemptCatchAtTime(Time.time);
 					} else {
 						player1.player.PickupBall();
@@ -505,17 +520,22 @@ public class GameEngine : MonoBehaviour {
 		if (player2.player.goneOverboard) {
 			player2.player.playerAI.returnBehindBoundary();
 		} else {
-			if (ball.holder && ball.holder.team == 2) {
-				if (ball.holder.GetInstanceID() != player2.player.GetInstanceID()) {
-					player2.ChangeControlTo(ball.holder);
+			bool held2 = false;
+			foreach(Ball b in ballsack) {
+				if (b.holder && b.holder.team == 2) {
+					player2.ChangeControlTo(b.holder);
+					held2 = true;
+					break;
 				}
-			} else {
+			}
+
+			if (!held2) {
 				foreach(Player p in team2) {
 					if (player2.player.kState.state != KineticStates.walk) break;
 					if (player2.player.aState.state != ActionStates.none) break;
 					// Calculate distance between ball and player
-					float deltaA = Vector3.Distance(p.transform.position, ball.transform.position);
-					float deltaB = Vector3.Distance(player2.player.transform.position, ball.transform.position);
+					float deltaA = Vector3.Distance(p.transform.position, tempBall.transform.position);
+					float deltaB = Vector3.Distance(player2.player.transform.position, tempBall.transform.position);
 					
 					if (deltaA + 1f < deltaB && Time.time - player2.lastPlayerChangeTime > 2f) {
 						player2.ChangeControlTo(p);
@@ -531,7 +551,7 @@ public class GameEngine : MonoBehaviour {
 				// Pickup or pass
 				if (player2.player.aState.state == ActionStates.holding) {
 					// Pass
-					ball.PassTo(passTarget);
+					player2.player.heldBall.PassTo(passTarget);
 				} else if(player2.player.aState.state == ActionStates.passing) {
 					// Pickup
 					if (Time.time - player2.player.aState.startTime > 0.5f) {
@@ -539,7 +559,7 @@ public class GameEngine : MonoBehaviour {
 						player2.player.PickupBall();
 					}
 				} else if(player1.player.kState.state != KineticStates.fall){
-					if (ball.state == BallState.rest || ball.state == BallState.free) {
+					if (tempBall.state == BallState.rest || tempBall.state == BallState.free) {
 						player2.player.PickupBall();
 					} else {
 						player2.player.Crouch();
@@ -562,11 +582,11 @@ public class GameEngine : MonoBehaviour {
 					//					ball.height = player2.player.height * 0.5f + 1.3f;
 					//					ball.ThrowToPos(targPos, throwVel2);
 					if(player2.player.aniState != AniState.Windup){
-						ball.ThrowToPos(targPos, 0f);
+						player2.player.heldBall.ThrowToPos(targPos, 0f);
 					}
 				} else {
 					// Pickup
-					if (ball.state != BallState.rest && ball.state != BallState.free) {
+					if (tempBall.state != BallState.rest && tempBall.state != BallState.free) {
 						player2.player.AttemptCatchAtTime(Time.time);
 					} else {
 						player2.player.PickupBall();

@@ -19,12 +19,15 @@ public class SuperCamera : MonoBehaviour {
 			return;
 		}
 		if (!target) return;
+		if (GameEngine.ballsack.Count == 0) return;
+
+		Ball tempBall = GameEngine.ballsack[0];
 		float newXpos = target.transform.position.x;
-		if (GameEngine.ball && GameEngine.ball.holder) {
+		if (tempBall && tempBall.holder) {
 			newXpos = CalculateCameraPosition();
-		} else if (GameEngine.ball && GameEngine.ball.vel.x > 0f && transform.position.x > newXpos) {
+		} else if (tempBall && tempBall.vel.x > 0f && transform.position.x > newXpos) {
 			newXpos = transform.position.x;
-		} else if (GameEngine.ball && GameEngine.ball.vel.x < 0f && transform.position.x < newXpos) {
+		} else if (tempBall && tempBall.vel.x < 0f && transform.position.x < newXpos) {
 			newXpos = transform.position.x;
 		}
 		
@@ -44,7 +47,7 @@ public class SuperCamera : MonoBehaviour {
 	}
 	
 	float CalculateCameraPosition() {
-		Player player = GameEngine.ball.holder;
+		Player player = GameEngine.ballsack[0].holder;
 		if (player.team == 1) {
 			if (player.facing == PlayerFacing.east ||
 			    player.facing == PlayerFacing.northEast ||

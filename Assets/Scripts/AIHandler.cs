@@ -20,6 +20,7 @@ public class AIHandler : MonoBehaviour {
 	
 	void FixedUpdate () {
 		if (!player.AIControl) return;
+		if (GameEngine.ballsack.Count == 0) return;
 		
 		if (player.fieldPosition == 1) {
 			if (player.team == 2 && GameEngine.limitTeam2AI) return;
@@ -30,14 +31,15 @@ public class AIHandler : MonoBehaviour {
 	}
 	
 	void HandleInfieldPlayer() {
+		Ball tempBall = GameEngine.ballsack[0];
 		// Handle tactics for infield players
-		if (GameEngine.ball.holder && GameEngine.ball.holder.team != player.team) {
+		if (tempBall.holder && tempBall.holder.team != player.team) {
 			// Run away!
 			float runPos = 0f;
 			float h = 0f;
 			float v = 0f;
 			if (player.team == 1) {
-				if (GameEngine.ball.holder.fieldPosition == 4) {
+				if (tempBall.holder.fieldPosition == 4) {
 					runPos = leftEdge + 2f;
 				} else {
 					runPos = leftEdge;
@@ -49,7 +51,7 @@ public class AIHandler : MonoBehaviour {
 					player.FaceBall();
 				}
 			} else {
-				if (GameEngine.ball.holder.fieldPosition == 4) {
+				if (tempBall.holder.fieldPosition == 4) {
 					runPos = rightEdge - 2f;
 				} else {
 					runPos = rightEdge;
@@ -67,7 +69,7 @@ public class AIHandler : MonoBehaviour {
 	
 	void HandleSidelinePlayer() {
 		// Handle tactics for sideline players
-		Ball ball = GameEngine.ball;
+		Ball ball = GameEngine.ballsack[0];
 		float distance = ball.transform.position.x - player.transform.position.x;
 		//print (GameEngine.sideline.isBeyondAny(ball.transform.position));
 		if (player.team == 1) {
@@ -146,7 +148,6 @@ public class AIHandler : MonoBehaviour {
 		
 		if (player.team == 1) {
 			if (GameEngine.sideline.isBeyondLeft(player.transform.position)) {
-				print ("beyond still");
 				returnFromSide = true;
 				player.Movement(1f, 0f);
 			} else if (returnFromSide) {
@@ -160,7 +161,7 @@ public class AIHandler : MonoBehaviour {
 			} else {
 				if (player.transform.position.x < 1f && player.facing == PlayerFacing.east) {
 					player.Movement(1f, 0f);
-				} else if(player.transform.position.x > 0.193) {
+				} else if(player.transform.position.x > -0.193) {
 					player.Movement(-1f, 0f);
 				} else {
 					inReturnMode = false;
@@ -181,8 +182,10 @@ public class AIHandler : MonoBehaviour {
 			} else {
 				if (player.transform.position.x > -1f && player.facing == PlayerFacing.west) {
 					player.Movement(-1f, 0f);
-				} else {
+				} else if(player.transform.position.x < 0.193) {
 					player.Movement(1f, 0f);
+				} else {
+					inReturnMode = false;
 				}
 			}
 		}

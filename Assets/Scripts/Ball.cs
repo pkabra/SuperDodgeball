@@ -2,7 +2,7 @@
 using System.Collections;
 
 public enum BallState { rest, free, held, pass, thrown, powered, superpowered };
-public enum PowerMode { none, fastball, wreckingball, wave, breaker, tsunami, corkscrew, vampire};
+public enum PowerMode { none, fastball, wreckingball, wave, breaker, tsunami, corkscrew, vampire, hadouken};
 public enum Trajectory { none, jump, low, mid, EastWestHigh, NorthSouthHigh };
 
 public class Ball : MonoBehaviour {
@@ -43,20 +43,18 @@ public class Ball : MonoBehaviour {
 
 	private GameObject shadow = null;
 	
-	
-	//private GameObject passTarg = null;
-	// Use this for initialization
-	void Start () {
-		if(GameEngine.ball == null){
-			GameEngine.ball = this;
-		}
-		GameEngine.ballsack.Add(this);
 
+	void Awake() {
 		spriteHolderTrans = this.transform.FindChild("SpriteHolder");
 		animator = this.gameObject.GetComponentInChildren<Animator>();
 		SuperCamera.target = this.gameObject;
 		aniStateID = Animator.StringToHash("state");
 		shadow = this.transform.FindChild("ballShadow").gameObject;
+	}
+
+	// Use this for initialization
+	void Start () {
+		GameEngine.ballsack.Add(this);
 	}
 	
 	// Once per frame
@@ -86,8 +84,19 @@ public class Ball : MonoBehaviour {
 		} else if(state == BallState.free){
 			FreeBallinLogic();
 			this.transform.position += vel * Time.fixedDeltaTime;
+			if (holder) {
+				holder.heldBall = null;
+				holder = null;
+			}
 		} else if(state == BallState.held){
 			shadow.renderer.enabled = false;
+		}
+
+		if (state == BallState.rest) {
+			if (holder) {
+				holder.heldBall = null;
+				holder = null;
+			}
 		}
 		
 		// Block for things that should always happen
@@ -110,12 +119,13 @@ public class Ball : MonoBehaviour {
 	public void StateHeld(Player newHolder){
 		//Assign holder, set that player's state to 'holding', and give control to that player
 		holder = newHolder;
+		newHolder.heldBall = this;
 		holder.aState.state = ActionStates.holding;
 		GameEngine.ChangeControl(holder.tag);
-		holder.myBall = this;
 		
 		//Set ball state, velocity to zero, and turn off the collider while being held
 		state = BallState.held;
+		mode = PowerMode.none;
 		vel = Vector3.zero;
 		this.collider.enabled = false;
 	}
@@ -174,6 +184,7 @@ public class Ball : MonoBehaviour {
 		holder.aState.state = ActionStates.passing;
 		holder.aState.startTime = Time.time;
 		StartCoroutine(holder.TempNoCollide(0.2f)); // Prevent holder from hitting self
+		holder.heldBall = null;
 		holder = null;
 			
 		//determine time for ball to get to target
@@ -227,6 +238,7 @@ public class Ball : MonoBehaviour {
 			
 			// set throwing player to 'throwing' state then remove holder
 			holder.StateThrowing();
+			holder.heldBall = null;
 			holder = null;
 		}
 	}
@@ -432,7 +444,7 @@ public class Ball : MonoBehaviour {
 				if((heightDifference > pOther.heightHitbox) || heightDifference < 0f){
 					return; // Do nothing because the ball went over or under the player
 				} else if(pOther.aState.state == ActionStates.catching && pOther.isFacingBall()){
-					if(state != BallState.thrown && !GameEngine.customStatic){
+					if(state != BallState.thrown && GameEngine.customStatic){
 						pOther.shieldEarned();
 					}
 					StateHeld(pOther);

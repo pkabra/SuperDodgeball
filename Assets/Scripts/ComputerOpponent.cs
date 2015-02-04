@@ -33,6 +33,12 @@ public class ComputerOpponent : MonoBehaviour {
 				MoveToTarget(p);
 			}
 		}
+		
+		// What to do with the rest of the team
+		MoveToGeneralLocation();
+		
+		// What to do with player being controlled
+		ControlPlayerMove();
 	}
 	
 	void AddPlayersToTeam() {
@@ -43,19 +49,12 @@ public class ComputerOpponent : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-		if (team.Count < 3) AddPlayersToTeam();
 		foreach(PlayerDecision p in team) {
 			if (p.player.GetInstanceID() == control.player.GetInstanceID()) {
 				p.hasTarget = false;
 				controlDecision = p;
 			}
 		}
-		
-		// What to do with the rest of the team
-		MoveToGeneralLocation();
-		
-		// What to do with player being controlled
-		ControlPlayerMove();
 	}
 	
 	void MoveToGeneralLocation() {
@@ -95,7 +94,7 @@ public class ComputerOpponent : MonoBehaviour {
 	}
 	
 	void ControlPlayerMove() {
-		Ball ball = GameEngine.ball;
+		Ball ball = GameEngine.ballsack[0];
 		
 		if (control.player.fieldPosition != 1) {
 			ControlSidelinePlayer();

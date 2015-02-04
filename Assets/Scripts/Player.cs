@@ -59,7 +59,6 @@ public class Player : MonoBehaviour {
 	public AniState         aniState = AniState.Standing;
 	public GameObject       HPBar = null;
 	private HPUpdaterGUI    hpGui = null;
-	public Ball            myBall = null;
 
 	private float           catchingTime = 0.8f;
 	private float           catchAttemptBuffer = 0.3f;
@@ -70,6 +69,8 @@ public class Player : MonoBehaviour {
 	private bool            dead = false;
 
 	public KenState			kenState = KenState.idle; 
+
+	public Ball				heldBall = null;
 	
 	// Use this for initialization
 	void Start () {
@@ -288,42 +289,47 @@ public class Player : MonoBehaviour {
 	public float ThrowAt(Vector3 targetPos){
 		if(kState.state == KineticStates.run){
 			if((Time.time - kState.startTime) > 0.8f && (Time.time - kState.startTime) < 1.4f){
-				GameEngine.ball.state = BallState.powered;
-				GameEngine.ball.mode = GroundAbility;
-				GameEngine.ball.animator.SetInteger(aniStateID, (int)GroundAbility);
+				heldBall.state = BallState.powered;
+				heldBall.mode = GroundAbility;
+				heldBall.animator.SetInteger(aniStateID, (int)GroundAbility);
 			} else {
-				GameEngine.ball.state = BallState.thrown;
+				heldBall.state = BallState.thrown;
 			}
 		} else if(kState.state == KineticStates.walk){
-			GameEngine.ball.state = BallState.thrown;
+			heldBall.state = BallState.thrown;
 		} else if (kState.state == KineticStates.runjump) {
 			print ("running jump throw!");
 			print (jumpVelY);
 			if (jumpVelY < 5f && jumpVelY > -5f) {
-				GameEngine.ball.state = BallState.superpowered;
-				GameEngine.ball.mode = JumpAbility;
-				GameEngine.ball.animator.SetInteger(aniStateID, (int)JumpAbility);
+				heldBall.state = BallState.superpowered;
+				heldBall.mode = JumpAbility;
+				heldBall.animator.SetInteger(aniStateID, (int)JumpAbility);
 			} else {
-				GameEngine.ball.state = BallState.thrown;
+				heldBall.state = BallState.thrown;
 			}
 		} else {
-			GameEngine.ball.state = BallState.thrown;
+			heldBall.state = BallState.thrown;
 		}
 		StateThrowing();
 		StartCoroutine(TempNoCollide(0.15f));
-		return GameEngine.ball.getThrowSpeed();
+		return heldBall.getThrowSpeed();
 	}
 
 	IEnumerator AttemptCatch(){
 		float endTime = Time.time + catchingTime;
 		//print ("hands up");
 		aState.state = ActionStates.catching;
+		aniState = AniState.Catching;
+		animator.SetInteger(aniStateID, (int)aniState);
+		print (aniState);
 		while(Time.time < endTime){
 			yield return null;
 		}
 		//print ("hands down");
 		if(aState.state == ActionStates.catching){
 			aState.state = ActionStates.none;
+			aniState = AniState.Standing;
+			animator.SetInteger(aniStateID, (int)aniState);
 		}
 	}
 	
@@ -412,15 +418,15 @@ public class Player : MonoBehaviour {
 			} else {
 				PassTargetingLogicTeam2();
 			}
-			GameEngine.ball.height = height * 0.5f + 1.3f;
+			heldBall.height = height * 0.5f + 1.3f;
 			Vector3 pos = transform.position;
 			if (facing == PlayerFacing.west || facing == PlayerFacing.northWest || facing == PlayerFacing.southWest) {
-				pos.x -= GameEngine.ball.heldOffsetX;
+				pos.x -= heldBall.heldOffsetX;
 			} else {
-				pos.x += GameEngine.ball.heldOffsetX;
+				pos.x += heldBall.heldOffsetX;
 			}
 			//pos.y += holder.height * 0.2f + 0.5f;
-			GameEngine.ball.transform.position = pos;
+			heldBall.transform.position = pos;
 			//height = holder.height * 0.5f + 1.3f;
 		}
 
@@ -686,12 +692,12 @@ public class Player : MonoBehaviour {
 			if (aState.state == ActionStates.holding){
 				Vector3 pos = transform.position;
 				if (facing == PlayerFacing.west || facing == PlayerFacing.northWest || facing == PlayerFacing.southWest) {
-					pos.x -= GameEngine.ball.heldOffsetX;
+					pos.x -= heldBall.heldOffsetX;
 				} else {
-					pos.x += GameEngine.ball.heldOffsetX;
+					pos.x += heldBall.heldOffsetX;
 				}
 				//pos.y += height * 0.2f + 0.5f;
-				GameEngine.ball.transform.position = pos;
+				heldBall.transform.position = pos;
 			}
 		}
 	}
@@ -797,7 +803,9 @@ public class Player : MonoBehaviour {
 	}
 
 	public bool isFacingBall(){
-		float xDirOfBall = GameEngine.ball.vel.x;
+		Ball tempBall = GameEngine.GetClosestBall(transform.position);
+
+		float xDirOfBall = tempBall.vel.x;
 
 		if(xDirOfBall < 0.0f){
 			if (this.facing == PlayerFacing.northEast || this.facing == PlayerFacing.east ||
@@ -819,13 +827,14 @@ public class Player : MonoBehaviour {
 	}
 
 	public void FaceBall() {
-		if (GameEngine.ball.transform.position.x - transform.position.x < 0f) {
+		Ball tempBall = GameObject.Find("Ball").GetComponent<Ball>();
+		if (tempBall.transform.position.x - transform.position.x < 0f) {
 			if (facing == PlayerFacing.east ||
 			    facing == PlayerFacing.northEast ||
 			    facing == PlayerFacing.southEast) {
-				if (GameEngine.ball.transform.position.y > 0.7f) {
+				if (tempBall.transform.position.y > 0.7f) {
 					facing = PlayerFacing.northWest;
-				} else if (GameEngine.ball.transform.position.y < -3.3f) {
+				} else if (tempBall.transform.position.y < -3.3f) {
 					facing = PlayerFacing.southWest;
 				} else {
 					facing = PlayerFacing.west;
@@ -835,9 +844,9 @@ public class Player : MonoBehaviour {
 			if (facing == PlayerFacing.west ||
 			    facing == PlayerFacing.northWest ||
 			    facing == PlayerFacing.southWest) {
-				if (GameEngine.ball.transform.position.y > 0.7f) {
+				if (tempBall.transform.position.y > 0.7f) {
 					facing = PlayerFacing.northEast;
-				} else if (GameEngine.ball.transform.position.y < -3.3f) {
+				} else if (tempBall.transform.position.y < -3.3f) {
 					facing = PlayerFacing.southEast;
 				} else {
 					facing = PlayerFacing.east;
@@ -884,7 +893,7 @@ public class Player : MonoBehaviour {
 			print ("holla");
 			this.aniState = AniState.Throwing;
 			float speed = ThrowAt(target);
-			myBall.newThrowToPos(target, speed);
+			heldBall.newThrowToPos(target, speed);
 		}
 
 	}
