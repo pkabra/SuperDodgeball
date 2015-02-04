@@ -7,7 +7,7 @@ public enum ActionStates{none, throwing, catching, passing, holding};
 public enum PlayerFacing{northEast, east, southEast, southWest, west, northWest};
 public enum AniState{Standing, StandingNorth, StandingSouth, Walking, Running,
 	Throwing, Passing, Crouching, Jumping, JumpThrowing, Falling, Laying, Windup, Catching, PassTargetAni};
-public enum KenState {idle, lefty, righty, power}; 
+public enum KenState {idle, lefty, righty, power, spinkick, uppercut, highkick, forwardhigh}; 
 
 public class ActionState {
 	public ActionStates state = ActionStates.none;

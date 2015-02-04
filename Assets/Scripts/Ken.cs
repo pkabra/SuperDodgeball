@@ -11,6 +11,7 @@ public class Ken : MonoBehaviour {
 	public float 	lastBallThrow = -4f;
 	
 	public bool		initThrow = false;
+	private bool    firstFrame = true;
 	
 	public GameObject ballPrefab = null;
 	public RuntimeAnimatorController   hadoukenAnimator;
@@ -23,6 +24,10 @@ public class Ken : MonoBehaviour {
 	}
 	
 	void FixedUpdate() {
+		if(firstFrame){
+			firstFrame = false;
+			player.Movement(-1f,0f);
+		}
 		if (hasTarget) {
 			Move ();
 		} else {
@@ -91,7 +96,7 @@ public class Ken : MonoBehaviour {
 		hasTarget = true;
 	}
 	
-	void Fire() {
+	void Fire() { // set up to recieve a PowerMode
 		if (!GameEngine.player1.player) return;
 		
 		GameObject a = Instantiate(ballPrefab) as GameObject;
