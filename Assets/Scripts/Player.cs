@@ -7,7 +7,6 @@ public enum ActionStates{none, throwing, catching, passing, holding};
 public enum PlayerFacing{northEast, east, southEast, southWest, west, northWest};
 public enum AniState{Standing, StandingNorth, StandingSouth, Walking, Running,
 	Throwing, Passing, Crouching, Jumping, JumpThrowing, Falling, Laying, Windup, Catching, PassTargetAni};
-public enum KenState {idle, lefty, righty, power, spinkick, uppercut, highkick, forwardhigh}; 
 
 public class ActionState {
 	public ActionStates state = ActionStates.none;
@@ -903,7 +902,20 @@ public class Player : MonoBehaviour {
 		angelSpot.y += 1f;
 		GameObject soul = Instantiate(GameEngine.angelPrefab, angelSpot, transform.rotation) as GameObject;
 
-		GameEngine.team1.Remove(this);
-		GameObject.Destroy(this.gameObject);
+		if(team == 1){
+			GameEngine.team1.Remove(this);
+		} else if (team == 2){
+			GameEngine.team2.Remove(this);
+		}
+
+		if(GameEngine.team1.Count == 0){
+			//do stuff
+		} else if( GameEngine.team2.Count == 0){
+			//do stuff
+		}
+
+		GameObject.Destroy(this);
+
+
 	}
 }

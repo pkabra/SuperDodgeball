@@ -55,6 +55,7 @@ public class Ball : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
 		GameEngine.ballsack.Add(this);
+		animator.SetInteger(aniStateID, (int)this.mode);
 	}
 	
 	// Once per frame
