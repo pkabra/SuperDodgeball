@@ -39,6 +39,7 @@ public class GameEngine : MonoBehaviour {
 	
 	public static List<Player>	team1;
 	public static List<Player> 	team2;
+	public static List<Ball>    ballsack;
 	
 	public Text					levelText = null;
 	public static int			levelTextTween = 1;
@@ -66,11 +67,14 @@ public class GameEngine : MonoBehaviour {
 	public bool					singlePlayer = false;
 	public static bool 			limitTeam2AI = false;
 	public static ComputerOpponent	computer;
+	public GameObject           angel = null;
+	public static GameObject    angelPrefab = null;
 
 	// Use this for initialization
 	void Awake () {
 		team1 = new List<Player>();
 		team2 = new List<Player>();
+		ballsack = new List<Ball>();
 
 		cam = this.GetComponentInParent<Camera> ();
 		
@@ -78,6 +82,7 @@ public class GameEngine : MonoBehaviour {
 			computer = GameObject.Find ("Team2Container").GetComponent<ComputerOpponent>();
 			limitTeam2AI = true;
 		}
+		angelPrefab = angel;
 	}
 	
 	void Update () {
@@ -107,11 +112,17 @@ public class GameEngine : MonoBehaviour {
 						player1.player.kState.startTime = myLocalTime;
 					}
 					player1.player.kState.state = KineticStates.run;
+					if(player1.player.aniState != AniState.Windup){
+						player1.player.aniState = AniState.Running;
+					}
 				}
 				player1.lastLeftKeyPress = myLocalTime;
 			}
 			if (Input.GetKeyUp("a") || (Input.GetKeyUp(KeyCode.LeftArrow) && singlePlayer)) {
 				player1.player.kState.state = KineticStates.walk;
+				if(player1.player.aniState != AniState.Windup){
+					player1.player.aniState = AniState.Walking;
+				}
 			}
 			// right
 			if(Input.GetKeyDown("d") || (Input.GetKeyDown(KeyCode.RightArrow) && singlePlayer)) {
@@ -120,11 +131,17 @@ public class GameEngine : MonoBehaviour {
 						player1.player.kState.startTime = myLocalTime;
 					}
 					player1.player.kState.state = KineticStates.run;
+					if(player1.player.aniState != AniState.Windup){
+						player1.player.aniState = AniState.Running;
+					}
 				}
 				player1.lastRightKeyPress = Time.time;
 			}
-			if (Input.GetKeyUp("d") || (Input.GetKeyDown(KeyCode.RightArrow) && singlePlayer)) {
+			if (Input.GetKeyUp("d") || (Input.GetKeyUp(KeyCode.RightArrow) && singlePlayer)) {
 				player1.player.kState.state = KineticStates.walk;
+				if(player1.player.aniState != AniState.Windup){
+					player1.player.aniState = AniState.Walking;
+				}
 			}
 		}
 		
@@ -137,11 +154,17 @@ public class GameEngine : MonoBehaviour {
 						player2.player.kState.startTime = Time.time;
 					}
 					player2.player.kState.state = KineticStates.run;
+					if(player2.player.aniState != AniState.Windup){
+						player2.player.aniState = AniState.Running;
+					}
 				}
 				player2.lastLeftKeyPress = Time.time;
 			}
 			if (Input.GetKeyUp("left") && !singlePlayer) {
 				player2.player.kState.state = KineticStates.walk;
+				if(player2.player.aniState != AniState.Windup){
+					player2.player.aniState = AniState.Walking;
+				}
 			}
 			// right
 			if(Input.GetKeyDown("right") && !singlePlayer) {
@@ -150,11 +173,17 @@ public class GameEngine : MonoBehaviour {
 						player2.player.kState.startTime = Time.time;
 					}
 					player2.player.kState.state = KineticStates.run;
+					if(player2.player.aniState != AniState.Windup){
+						player2.player.aniState = AniState.Running;
+					}
 				}
 				player2.lastRightKeyPress = Time.time;
 			}
 			if (Input.GetKeyUp("right") && !singlePlayer) {
 				player2.player.kState.state = KineticStates.walk;
+				if(player2.player.aniState != AniState.Windup){
+					player2.player.aniState = AniState.Walking;
+				}
 			}
 		}
 		
@@ -210,6 +239,7 @@ public class GameEngine : MonoBehaviour {
 				player.goneOverboard = true;
 			} else if(!player.playerAI.inReturnMode) {
 				player.goneOverboard = false;
+
 			}
 		}
 		
@@ -294,9 +324,12 @@ public class GameEngine : MonoBehaviour {
 					}
 					targPos.z = -1.0f;
 					//targPos.y += 0.5f;
-					float throwVel1 = player1.player.ThrowAt(targPos);
-					ball.height = player1.player.height + 1.3f;
-					ball.ThrowToPos(targPos, throwVel1);
+//					float throwVel1 = player1.player.ThrowAt(targPos);
+////					ball.height = player1.player.height + 1.3f;
+//					ball.ThrowToPos(targPos, throwVel1);
+					if(player1.player.aniState != AniState.Windup){
+						ball.ThrowToPos(targPos, 0f);
+					}
 				} else {
 					// Pickup
 					if (ball.state != BallState.rest && ball.state != BallState.free) {
@@ -374,9 +407,12 @@ public class GameEngine : MonoBehaviour {
 					}
 					targPos.z = -1.0f;
 					//targPos.y += 0.5f;
-					float throwVel2 = player2.player.ThrowAt(targPos);
-					ball.height = player2.player.height * 0.5f + 1.3f;
-					ball.ThrowToPos(targPos, throwVel2);
+//					float throwVel2 = player2.player.ThrowAt(targPos);
+//					ball.height = player2.player.height * 0.5f + 1.3f;
+//					ball.ThrowToPos(targPos, throwVel2);
+					if(player2.player.aniState != AniState.Windup){
+						ball.ThrowToPos(targPos, 0f);
+					}
 				} else {
 					// Pickup
 					if (ball.state != BallState.rest && ball.state != BallState.free) {
@@ -411,5 +447,18 @@ public class GameEngine : MonoBehaviour {
 				}
 			}
 		}
+	}
+
+	public static Ball GetClosestBall(Vector3 poi){
+		float minDist = 1234.0f;
+		Ball closest = null;
+		foreach(Ball b in ballsack){
+			float dist = Vector3.Distance(b.transform.position, poi);
+			if(dist < minDist){
+				closest = b;
+				minDist = dist;
+			}
+		}
+		return closest;
 	}
 }

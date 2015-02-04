@@ -5,8 +5,8 @@ using System.Collections.Generic;
 public enum KineticStates{none, stand, walk, run, crouch, jump ,runjump, fall, stun};
 public enum ActionStates{none, throwing, catching, passing, holding};
 public enum PlayerFacing{northEast, east, southEast, southWest, west, northWest};
-public enum AnimationState{Standing, StandingNorth, StandingSouth, Walking, Running,
-	Throwing, Passing, Crouching, Jumping, JumpThrowing, Falling, Laying};
+public enum AniState{Standing, StandingNorth, StandingSouth, Walking, Running,
+	Throwing, Passing, Crouching, Jumping, JumpThrowing, Falling, Laying, Windup, Catching, PassTargetAni};
 
 public class ActionState {
 	public ActionStates state = ActionStates.none;
@@ -45,6 +45,8 @@ public class Player : MonoBehaviour {
 	public int              team = 0;
 	public bool             isShielded = false;
 	public bool             goAround = false; // Around the World, Around the WOOOORLD!!!
+	public bool             windupThr = false;
+	public bool             windupPass = false;
 
 	public float            jumpVelX = 0f;
 	public float            jumpVelY = 0f;
@@ -53,8 +55,10 @@ public class Player : MonoBehaviour {
 	private Shield          shieldHolder = null;
 	public Animator         animator = null;
 	private int             aniStateID = 0;
+	public AniState         aniState = AniState.Standing;
 	public GameObject       HPBar = null;
 	private HPUpdaterGUI    hpGui = null;
+	public Ball            myBall = null;
 
 	private float           catchingTime = 0.8f;
 	private float           catchAttemptBuffer = 0.3f;
@@ -62,6 +66,7 @@ public class Player : MonoBehaviour {
 	private bool            xLock = false;
 	private bool            yLock = false;
 	public bool             noBallHit = false;
+	private bool            dead = false;
 	
 	// Use this for initialization
 	void Start () {
@@ -103,6 +108,7 @@ public class Player : MonoBehaviour {
 	public void StateThrowing(){
 		// Player just threw the ball
 		aState.state = ActionStates.throwing;
+		aniState = AniState.Throwing;
 		StartCoroutine(resetAStateNone(0.5f));
 	}
 		
@@ -193,6 +199,16 @@ public class Player : MonoBehaviour {
 				}
 			}
 		}
+
+		if(h == 0f && v == 0f && aniState != AniState.Windup){
+			if(facing == PlayerFacing.east || facing == PlayerFacing.west ){
+				aniState = AniState.Standing;
+			} else if (facing == PlayerFacing.northEast || facing == PlayerFacing.northWest ){
+				aniState = AniState.StandingNorth;
+			} else if (facing == PlayerFacing.southEast || facing == PlayerFacing.southWest ){
+				aniState = AniState.StandingSouth;
+			}
+		}
 		
 		pos1 += vel * Time.fixedDeltaTime;
 		transform.position = pos1;
@@ -226,7 +242,11 @@ public class Player : MonoBehaviour {
 	
 	public void PickupBall() {
 		if (kState.state != KineticStates.walk && kState.state != KineticStates.run) return; 
-		Ball theBall = GameEngine.ball;
+		Ball theBall = GameEngine.GetClosestBall(transform.position);
+		if(theBall == null){
+			Crouch ();
+		}
+
 		float heightDifference = theBall.height - this.height; 
 		float delta = Vector3.Distance(transform.position, theBall.transform.position);
 
@@ -240,6 +260,7 @@ public class Player : MonoBehaviour {
 	public void Crouch() {
 		Movement (0f,0f);
 		kState.state = KineticStates.crouch;
+		aniState = AniState.Crouching;
 		kState.startTime = Time.time;
 		heightHitbox = 0.5f;
 	}
@@ -264,30 +285,30 @@ public class Player : MonoBehaviour {
 	public float ThrowAt(Vector3 targetPos){
 		if(kState.state == KineticStates.run){
 			if((Time.time - kState.startTime) > 0.8f && (Time.time - kState.startTime) < 1.4f){
-				GameEngine.ball.state = BallState.powered;
-				GameEngine.ball.mode = GroundAbility;
-				GameEngine.ball.animator.SetInteger(aniStateID, (int)GroundAbility);
+				myBall.state = BallState.powered;
+				myBall.mode = GroundAbility;
+				myBall.animator.SetInteger(aniStateID, (int)GroundAbility);
 			} else {
-				GameEngine.ball.state = BallState.thrown;
+				myBall.state = BallState.thrown;
 			}
 		} else if(kState.state == KineticStates.walk){
-			GameEngine.ball.state = BallState.thrown;
+			myBall.state = BallState.thrown;
 		} else if (kState.state == KineticStates.runjump) {
 			print ("running jump throw!");
 			print (jumpVelY);
 			if (jumpVelY < 5f && jumpVelY > -5f) {
-				GameEngine.ball.state = BallState.superpowered;
-				GameEngine.ball.mode = JumpAbility;
-				GameEngine.ball.animator.SetInteger(aniStateID, (int)JumpAbility);
+				myBall.state = BallState.superpowered;
+				myBall.mode = JumpAbility;
+				myBall.animator.SetInteger(aniStateID, (int)JumpAbility);
 			} else {
-				GameEngine.ball.state = BallState.thrown;
+				myBall.state = BallState.thrown;
 			}
 		} else {
-			GameEngine.ball.state = BallState.thrown;
+			myBall.state = BallState.thrown;
 		}
 		StateThrowing();
 		StartCoroutine(TempNoCollide(0.15f));
-		return GameEngine.ball.getThrowSpeed();
+		return myBall.getThrowSpeed();
 	}
 
 	IEnumerator AttemptCatch(){
@@ -329,6 +350,7 @@ public class Player : MonoBehaviour {
 			yield return null;
 		}
 		this.aState.state = ActionStates.none;
+		this.aniState = AniState.Standing;
 	}
 
 	public void PlayerHit(Ball other) {
@@ -347,7 +369,7 @@ public class Player : MonoBehaviour {
 		hpGui.UpdateCover(hp);
 		
 		if (hp <= 0f) {
-			//			PlayerKilled();
+			dead = true;
 			return;
 		}
 		
@@ -397,8 +419,12 @@ public class Player : MonoBehaviour {
 			//pos.y += holder.height * 0.2f + 0.5f;
 			GameEngine.ball.transform.position = pos;
 			//height = holder.height * 0.5f + 1.3f;
+		}
 
-
+		if(aState.state == ActionStates.holding || aState.state == ActionStates.none){
+			if(aniState != AniState.Windup && vel != Vector3.zero && kState.state == KineticStates.walk){
+				aniState = AniState.Walking;
+			}
 		}
 
 		if (kState.state == KineticStates.crouch) {
@@ -429,8 +455,7 @@ public class Player : MonoBehaviour {
 		}
 		Vector3 heightOffset = new Vector3( 0, height * 0.5f + 1.2f, newZ);
 		spriteHolderTrans.localPosition = heightOffset;
-		//shieldHolder.transform.position = spriteHolderTrans.position;
-		animator.SetInteger(aniStateID, (int)this.aState.state);
+		animator.SetInteger(aniStateID, (int)this.aniState);
 
 		if(fieldPosition == 1){
 			if(transform.position.x < -12.25f){
@@ -497,6 +522,9 @@ public class Player : MonoBehaviour {
 			goAround = false;
 			height = 0f;
 			heightVel = 0f;
+			if(dead){
+				PlayerKilled();
+			}
 		} else {
 			heightVel += GameEngine.gravity;
 			height += heightVel * Time.fixedDeltaTime;
@@ -836,5 +864,30 @@ public class Player : MonoBehaviour {
 			this.height += 5.0f;
 			this.transform.position = newVec;
 		}
+	}
+
+	public IEnumerator WindUpThrow(Vector3 target){
+		float endTime = Time.time + 0.12f;
+		this.aniState = AniState.Windup;
+		windupThr = true;
+		while(Time.time < endTime){
+			yield return null;
+		}
+		if(this.aniState == AniState.Windup){
+			print ("holla");
+			this.aniState = AniState.Throwing;
+			float speed = ThrowAt(target);
+			myBall.newThrowToPos(target, speed);
+		}
+
+	}
+
+	void PlayerKilled(){
+		Vector3 angelSpot = transform.position;
+		angelSpot.y += 1f;
+		GameObject soul = Instantiate(GameEngine.angelPrefab, angelSpot, transform.rotation) as GameObject;
+
+		GameEngine.team1.Remove(this);
+		GameObject.Destroy(this.gameObject);
 	}
 }

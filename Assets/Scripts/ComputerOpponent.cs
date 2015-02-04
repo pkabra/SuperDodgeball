@@ -71,6 +71,7 @@ public class ComputerOpponent : MonoBehaviour {
 	}
 	
 	void MoveToTarget(PlayerDecision p) {
+		if(p.player.kState.state != KineticStates.walk || p.player.kState.state != KineticStates.run) return;
 		float h = 0f;
 		float v = 0f;
 		if (p.player.transform.position.x + 0.4f < p.target.x) {
@@ -154,6 +155,7 @@ public class ComputerOpponent : MonoBehaviour {
 			if ((control.player.kState.state == KineticStates.run && distance < 2f) ||
 			    (control.player.kState.state == KineticStates.walk && distance < 1f)) {
 				control.b = true;
+				control.a = false;
 				control.h = 0f;
 				controlDecision.initThrow = false;
 			} else {

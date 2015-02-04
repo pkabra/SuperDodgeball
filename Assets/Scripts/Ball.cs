@@ -47,7 +47,11 @@ public class Ball : MonoBehaviour {
 	//private GameObject passTarg = null;
 	// Use this for initialization
 	void Start () {
-		GameEngine.ball = this;
+		if(GameEngine.ball == null){
+			GameEngine.ball = this;
+		}
+		GameEngine.ballsack.Add(this);
+
 		spriteHolderTrans = this.transform.FindChild("SpriteHolder");
 		animator = this.gameObject.GetComponentInChildren<Animator>();
 		SuperCamera.target = this.gameObject;
@@ -108,6 +112,7 @@ public class Ball : MonoBehaviour {
 		holder = newHolder;
 		holder.aState.state = ActionStates.holding;
 		GameEngine.ChangeControl(holder.tag);
+		holder.myBall = this;
 		
 		//Set ball state, velocity to zero, and turn off the collider while being held
 		state = BallState.held;
@@ -180,6 +185,11 @@ public class Ball : MonoBehaviour {
 	// Throw the ball at a target position at a velocity relative to the multiplier passed in.
 	// The ball is not affected by gravity during a throw.
 	public void ThrowToPos(Vector3 targPos, float velMult){
+		StartCoroutine(holder.WindUpThrow(targPos));
+	}
+
+	public void newThrowToPos(Vector3 targPos, float velMult)
+	{
 		// release ball from holder and enable collider
 		this.collider.enabled = true;
 		targetPos = targPos;
@@ -188,12 +198,12 @@ public class Ball : MonoBehaviour {
 		//transform.position = pos;
 		//height = 1f;
 		//pos.y -= 0.5f;
-
+		
 		// set new ball state and velocity in direction of target
 		Vector3 dir = targPos - this.transform.position;
 		dir.z = 0;
 		vel = dir.normalized * velMult;
-
+		
 		if(holder.height > 0.001f){
 			trajectory = Trajectory.jump;
 			totalTrajDist = dir.magnitude + 0.3f;
@@ -202,7 +212,7 @@ public class Ball : MonoBehaviour {
 		} else {
 			trajectory = Trajectory.none;
 		}
-
+		
 		// Player sets ball state when he throws, this done for powered shot implementation
 		if(holder.team == 1){
 			throwerTeam = 1;
@@ -478,7 +488,7 @@ public class Ball : MonoBehaviour {
 	void PowerBallLogic(){
 		switch(mode){
 		case PowerMode.fastball: 
-			break; // current don't have to do anythinf for this powerthrow
+			break; // current don't have to do anything for this powerthrow
 		case PowerMode.wreckingball: 
 			WreckingBallLogic();
 			break;

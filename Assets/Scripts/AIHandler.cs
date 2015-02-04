@@ -146,6 +146,7 @@ public class AIHandler : MonoBehaviour {
 		
 		if (player.team == 1) {
 			if (GameEngine.sideline.isBeyondLeft(player.transform.position)) {
+				print ("beyond still");
 				returnFromSide = true;
 				player.Movement(1f, 0f);
 			} else if (returnFromSide) {
