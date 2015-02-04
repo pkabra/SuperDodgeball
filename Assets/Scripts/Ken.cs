@@ -89,6 +89,7 @@ public class Ken : MonoBehaviour {
 	}
 	
 	void Move() {
+		if(player == null) return;
 		float h = 0f;
 		float v = 0f;
 		if (player.transform.position.x + 0.4f < target.x) {
@@ -188,7 +189,6 @@ public class Ken : MonoBehaviour {
 		lastBallThrow = Time.time;
 		
 		Vector3 StartPos = this.transform.position;
-		StartPos.y += 1.2f;
 		StartPos.x -= 1f;
 
 		// Set shot target
@@ -207,6 +207,7 @@ public class Ken : MonoBehaviour {
 		player.ThrowAt(shotTarget);
 		b.ThrowToPos(shotTarget, 1f);
 		b.state = BallState.powered;
+		b.height = 1.5f;
 		b.mode = mode_in;
 	}
 

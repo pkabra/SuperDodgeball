@@ -348,8 +348,10 @@ public class Player : MonoBehaviour {
 		while(Time.time < endTime){
 			yield return null;
 		}
-		this.noBallHit = false;
-		if(this.isShielded) shieldHolder.collider.enabled = true;
+		if(this != null){
+			this.noBallHit = false;
+			if(this.isShielded) shieldHolder.collider.enabled = true;
+		}
 	}
 
 	public IEnumerator resetAStateNone(float secs){
@@ -357,8 +359,10 @@ public class Player : MonoBehaviour {
 		while(Time.time < endTime){
 			yield return null;
 		}
-		this.aState.state = ActionStates.none;
-		this.aniState = AniState.Standing;
+		if(this != null){
+			this.aState.state = ActionStates.none;
+			this.aniState = AniState.Standing;
+		}
 	}
 
 	public void PlayerHit(Ball other) {
@@ -900,6 +904,7 @@ public class Player : MonoBehaviour {
 	void PlayerKilled(){
 		Vector3 angelSpot = transform.position;
 		angelSpot.y += 1f;
+		angelSpot.z = -2f;
 		GameObject soul = Instantiate(GameEngine.angelPrefab, angelSpot, transform.rotation) as GameObject;
 
 		if(team == 1){
@@ -914,8 +919,6 @@ public class Player : MonoBehaviour {
 			//do stuff
 		}
 
-		GameObject.Destroy(this);
-
-
+		GameObject.Destroy(this.gameObject);
 	}
 }
