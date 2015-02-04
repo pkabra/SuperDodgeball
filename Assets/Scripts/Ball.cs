@@ -35,7 +35,7 @@ public class Ball : MonoBehaviour {
 	private float gravity = -0.9f;
 	private float bounciness = 0.85f;
 	private float timeStamp = 0.0f;
-	private int throwerTeam = 0;
+	public int throwerTeam = 0;
 	private int wreckingMode = 0;
 	private int breakerMode = 0;
 	public Vector3 prevPos = Vector3.zero;
@@ -185,7 +185,11 @@ public class Ball : MonoBehaviour {
 	// Throw the ball at a target position at a velocity relative to the multiplier passed in.
 	// The ball is not affected by gravity during a throw.
 	public void ThrowToPos(Vector3 targPos, float velMult){
-		StartCoroutine(holder.WindUpThrow(targPos));
+		if(!holder){
+			newThrowToPos(targPos, velMult);
+		} else {
+			StartCoroutine(holder.WindUpThrow(targPos));
+		}
 	}
 
 	public void newThrowToPos(Vector3 targPos, float velMult)
@@ -204,7 +208,7 @@ public class Ball : MonoBehaviour {
 		dir.z = 0;
 		vel = dir.normalized * velMult;
 		
-		if(holder.height > 0.001f){
+		if(holder && holder.height > 0.001f){
 			trajectory = Trajectory.jump;
 			totalTrajDist = dir.magnitude + 0.3f;
 			maxHeight = holder.height - 1.3f;
@@ -213,16 +217,18 @@ public class Ball : MonoBehaviour {
 			trajectory = Trajectory.none;
 		}
 		
-		// Player sets ball state when he throws, this done for powered shot implementation
-		if(holder.team == 1){
-			throwerTeam = 1;
-		} else {
-			throwerTeam = 2;
+		if (holder) {
+			// Player sets ball state when he throws, this done for powered shot implementation
+			if(holder.team == 1){
+				throwerTeam = 1;
+			} else {
+				throwerTeam = 2;
+			}
+			
+			// set throwing player to 'throwing' state then remove holder
+			holder.StateThrowing();
+			holder = null;
 		}
-		
-		// set throwing player to 'throwing' state then remove holder
-		holder.StateThrowing();
-		holder = null;
 	}
 	
 	// This function contains the logic for how the ball should bounce off a vertical surface.
@@ -426,7 +432,7 @@ public class Ball : MonoBehaviour {
 				if((heightDifference > pOther.heightHitbox) || heightDifference < 0f){
 					return; // Do nothing because the ball went over or under the player
 				} else if(pOther.aState.state == ActionStates.catching && pOther.isFacingBall()){
-					if(state != BallState.thrown){
+					if(state != BallState.thrown && !GameEngine.customStatic){
 						pOther.shieldEarned();
 					}
 					StateHeld(pOther);
@@ -535,6 +541,7 @@ public class Ball : MonoBehaviour {
 	}
 
 	public float getThrowSpeed(){
+		if (!holder) return 1f; 
 		float speed = 0f;
 		if(state == BallState.thrown){
 			if(this.holder.kState.state == KineticStates.run){

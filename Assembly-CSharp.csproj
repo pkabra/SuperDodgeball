@@ -46,13 +46,14 @@
 	</Reference>
   </ItemGroup>
   <ItemGroup>
-     <Compile Include="Assets\AngelFloaty.cs" />
      <Compile Include="Assets\Scripts\AIHandler.cs" />
+     <Compile Include="Assets\Scripts\AngelFloaty.cs" />
      <Compile Include="Assets\Scripts\Ball.cs" />
      <Compile Include="Assets\Scripts\ComputerOpponent.cs" />
      <Compile Include="Assets\Scripts\GameEngine.cs" />
      <Compile Include="Assets\Scripts\HPUpdaterGUI.cs" />
      <Compile Include="Assets\Scripts\InfieldPlayerBoundry.cs" />
+     <Compile Include="Assets\Scripts\Ken.cs" />
      <Compile Include="Assets\Scripts\Player.cs" />
      <Compile Include="Assets\Scripts\Shield.cs" />
      <Compile Include="Assets\Scripts\Sideline.cs" />

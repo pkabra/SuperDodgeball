@@ -70,6 +70,9 @@ public class GameEngine : MonoBehaviour {
 	public GameObject           angel = null;
 	public static GameObject    angelPrefab = null;
 
+	public bool					customLevel = false; 
+	public static bool			customStatic = false; 
+
 	// Use this for initialization
 	void Awake () {
 		team1 = new List<Player>();
@@ -83,18 +86,106 @@ public class GameEngine : MonoBehaviour {
 			limitTeam2AI = true;
 		}
 		angelPrefab = angel;
+		customStatic = customLevel; 
 	}
 	
 	void Update () {
+		if (!customLevel) {
+			HandleClassicControls();
+		} else {
+			CustomControls();
+		}
+	}
+	
+	void CustomControls() {
 		float myLocalTime = Time.time;
+		if (player1.player == null) {
+			player1.ChangeControlTo(team1[0]);
+		}
 		if(Input.GetKeyDown(KeyCode.G)){
-			foreach (Player p in team1) {
-				p.shieldEarned();
+			player1.player.shieldEarned();
+		}
+		
+		//// Player 1 double tap detection
+		// left
+		if (player1.player.kState.state == KineticStates.walk || player1.player.kState.state == KineticStates.run) {
+			if(Input.GetKeyDown("a") || (Input.GetKeyDown(KeyCode.LeftArrow) && singlePlayer)) {
+				if (myLocalTime - player1.lastLeftKeyPress < 0.2f) {
+					if(player1.player.kState.state != KineticStates.run){
+						player1.player.kState.startTime = myLocalTime;
+					}
+					player1.player.kState.state = KineticStates.run;
+					if(player1.player.aniState != AniState.Windup){
+						player1.player.aniState = AniState.Running;
+					}
+				}
+				player1.lastLeftKeyPress = myLocalTime;
 			}
-			foreach (Player p in team2) {
-				p.shieldEarned();
+			if (Input.GetKeyUp("a") || (Input.GetKeyUp(KeyCode.LeftArrow) && singlePlayer)) {
+				player1.player.kState.state = KineticStates.walk;
+				if(player1.player.aniState != AniState.Windup){
+					player1.player.aniState = AniState.Walking;
+				}
+			}
+			// right
+			if(Input.GetKeyDown("d") || (Input.GetKeyDown(KeyCode.RightArrow) && singlePlayer)) {
+				if (Time.time - player1.lastRightKeyPress < 0.2f) {
+					if(player1.player.kState.state != KineticStates.run){
+						player1.player.kState.startTime = myLocalTime;
+					}
+					player1.player.kState.state = KineticStates.run;
+					if(player1.player.aniState != AniState.Windup){
+						player1.player.aniState = AniState.Running;
+					}
+				}
+				player1.lastRightKeyPress = Time.time;
+			}
+			if (Input.GetKeyUp("d") || (Input.GetKeyUp(KeyCode.RightArrow) && singlePlayer)) {
+				player1.player.kState.state = KineticStates.walk;
+				if(player1.player.aniState != AniState.Windup){
+					player1.player.aniState = AniState.Walking;
+				}
 			}
 		}
+		//Controls
+		player1.h = Input.GetAxisRaw("Horizontal");
+		player1.y = Input.GetAxisRaw("Vertical");
+		if (singlePlayer) {
+			if (Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.RightArrow)) {
+				player1.h = Input.GetAxisRaw("Horizontal2");
+			}
+			if (Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.DownArrow)) {
+				player1.y = Input.GetAxisRaw("Vertical2");
+			}
+		}
+		if( Input.GetKeyDown (KeyCode.X) || (Input.GetKeyDown(KeyCode.Period) && singlePlayer) ){
+			player1.b = true;
+			player1.lastBPress = Time.time;
+			if ((Input.GetKey (KeyCode.Z) || (Input.GetKey(KeyCode.Comma) && singlePlayer)) && (Time.time - player1.lastAPress) < 0.01f) {
+				player1.a = true;
+			}
+		}
+		if( Input.GetKeyDown (KeyCode.Z) || (Input.GetKeyDown(KeyCode.Comma) && singlePlayer) ){
+			player1.a = true;
+			player1.lastAPress = Time.time;
+			if ((Input.GetKey(KeyCode.X) || (Input.GetKey(KeyCode.Period) && singlePlayer)) && (Time.time - player1.lastBPress) < 0.01f) {
+				player1.b = true;
+			}
+		}
+		
+		foreach (Player player in team1) {
+			if ((player.transform.position.x > -0.193f ||
+			     sideline.isBeyondLeft(player.transform.position))
+			    && player.fieldPosition == 1) {
+				player.goneOverboard = true;
+			} else if(!player.playerAI.inReturnMode) {
+				player.goneOverboard = false;
+			}
+		}
+	}
+	
+	void HandleClassicControls() {
+		float myLocalTime = Time.time;
 		
 		if (player1.player == null) {
 			player1.ChangeControlTo(team1[0]);
@@ -239,7 +330,6 @@ public class GameEngine : MonoBehaviour {
 				player.goneOverboard = true;
 			} else if(!player.playerAI.inReturnMode) {
 				player.goneOverboard = false;
-
 			}
 		}
 		
@@ -256,6 +346,67 @@ public class GameEngine : MonoBehaviour {
 	
 	// Update is called once per frame
 	void FixedUpdate () {
+		if (!customLevel) {
+			HandleClassicBehaviour();
+		} else {
+			CustomBehaviour();
+		}
+	}
+	
+	void CustomBehaviour() {
+		if (player1.player == null) {
+			player1.ChangeControlTo(team1[0]);
+		}
+		
+		if (player1.player.goneOverboard) {
+			player1.player.playerAI.returnBehindBoundary();
+		} else {
+			// Controls
+			if (player1.b && player1.a) {
+				// Jump
+				player1.player.Jump (player1.h);
+			} else if (player1.a) {
+				// Pickup or pass
+				if(player1.player.kState.state != KineticStates.fall){
+					player1.player.Crouch();
+				}
+			} else if (player1.b) {
+				// Pickup or throw
+				if (player1.player.aState.state == ActionStates.holding) {
+					// Throw
+					// Aim to closest player
+					Vector3 targPos = team2[0].transform.position;
+					foreach (Player p in team2) {
+						if (Vector3.Distance(p.transform.position, player1.player.transform.position) < Vector3.Distance(targPos, player1.player.transform.position)) {
+							targPos = p.transform.position;
+						}
+					}
+					targPos.z = -1.0f;
+					//targPos.y += 0.5f;
+					//					float throwVel1 = player1.player.ThrowAt(targPos);
+					////					ball.height = player1.player.height + 1.3f;
+					//					ball.ThrowToPos(targPos, throwVel1);
+					if(player1.player.aniState != AniState.Windup){
+						ball.ThrowToPos(targPos, 0f);
+					}
+				} else {
+					// Pickup
+					if (ball.state != BallState.rest && ball.state != BallState.free) {
+						player1.player.AttemptCatchAtTime(Time.time);
+					} else {
+						player1.player.PickupBall();
+					}
+				}
+			} else {
+				player1.player.Movement(player1.h, player1.y);
+			}
+		}
+		
+		player1.a = false;
+		player1.b = false;
+	}
+	
+	void HandleClassicBehaviour() {
 		//		if(temp % 20 == 1){
 		//			print (passTarget.fieldPosition);
 		//		}
@@ -324,9 +475,9 @@ public class GameEngine : MonoBehaviour {
 					}
 					targPos.z = -1.0f;
 					//targPos.y += 0.5f;
-//					float throwVel1 = player1.player.ThrowAt(targPos);
-////					ball.height = player1.player.height + 1.3f;
-//					ball.ThrowToPos(targPos, throwVel1);
+					//					float throwVel1 = player1.player.ThrowAt(targPos);
+					////					ball.height = player1.player.height + 1.3f;
+					//					ball.ThrowToPos(targPos, throwVel1);
 					if(player1.player.aniState != AniState.Windup){
 						ball.ThrowToPos(targPos, 0f);
 					}
@@ -407,9 +558,9 @@ public class GameEngine : MonoBehaviour {
 					}
 					targPos.z = -1.0f;
 					//targPos.y += 0.5f;
-//					float throwVel2 = player2.player.ThrowAt(targPos);
-//					ball.height = player2.player.height * 0.5f + 1.3f;
-//					ball.ThrowToPos(targPos, throwVel2);
+					//					float throwVel2 = player2.player.ThrowAt(targPos);
+					//					ball.height = player2.player.height * 0.5f + 1.3f;
+					//					ball.ThrowToPos(targPos, throwVel2);
 					if(player2.player.aniState != AniState.Windup){
 						ball.ThrowToPos(targPos, 0f);
 					}
@@ -429,6 +580,7 @@ public class GameEngine : MonoBehaviour {
 		player2.a = false;
 		player2.b = false;
 	}
+	
 	public static void ChangeControl(string tag) {
 		if (tag == "Team1") {
 			foreach(Player p in team1) {

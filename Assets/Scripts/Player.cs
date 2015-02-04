@@ -7,6 +7,7 @@ public enum ActionStates{none, throwing, catching, passing, holding};
 public enum PlayerFacing{northEast, east, southEast, southWest, west, northWest};
 public enum AniState{Standing, StandingNorth, StandingSouth, Walking, Running,
 	Throwing, Passing, Crouching, Jumping, JumpThrowing, Falling, Laying, Windup, Catching, PassTargetAni};
+public enum KenState {idle, lefty, righty, power}; 
 
 public class ActionState {
 	public ActionStates state = ActionStates.none;
@@ -67,6 +68,8 @@ public class Player : MonoBehaviour {
 	private bool            yLock = false;
 	public bool             noBallHit = false;
 	private bool            dead = false;
+
+	public KenState			kenState = KenState.idle; 
 	
 	// Use this for initialization
 	void Start () {
@@ -285,30 +288,30 @@ public class Player : MonoBehaviour {
 	public float ThrowAt(Vector3 targetPos){
 		if(kState.state == KineticStates.run){
 			if((Time.time - kState.startTime) > 0.8f && (Time.time - kState.startTime) < 1.4f){
-				myBall.state = BallState.powered;
-				myBall.mode = GroundAbility;
-				myBall.animator.SetInteger(aniStateID, (int)GroundAbility);
+				GameEngine.ball.state = BallState.powered;
+				GameEngine.ball.mode = GroundAbility;
+				GameEngine.ball.animator.SetInteger(aniStateID, (int)GroundAbility);
 			} else {
-				myBall.state = BallState.thrown;
+				GameEngine.ball.state = BallState.thrown;
 			}
 		} else if(kState.state == KineticStates.walk){
-			myBall.state = BallState.thrown;
+			GameEngine.ball.state = BallState.thrown;
 		} else if (kState.state == KineticStates.runjump) {
 			print ("running jump throw!");
 			print (jumpVelY);
 			if (jumpVelY < 5f && jumpVelY > -5f) {
-				myBall.state = BallState.superpowered;
-				myBall.mode = JumpAbility;
-				myBall.animator.SetInteger(aniStateID, (int)JumpAbility);
+				GameEngine.ball.state = BallState.superpowered;
+				GameEngine.ball.mode = JumpAbility;
+				GameEngine.ball.animator.SetInteger(aniStateID, (int)JumpAbility);
 			} else {
-				myBall.state = BallState.thrown;
+				GameEngine.ball.state = BallState.thrown;
 			}
 		} else {
-			myBall.state = BallState.thrown;
+			GameEngine.ball.state = BallState.thrown;
 		}
 		StateThrowing();
 		StartCoroutine(TempNoCollide(0.15f));
-		return myBall.getThrowSpeed();
+		return GameEngine.ball.getThrowSpeed();
 	}
 
 	IEnumerator AttemptCatch(){
@@ -455,7 +458,11 @@ public class Player : MonoBehaviour {
 		}
 		Vector3 heightOffset = new Vector3( 0, height * 0.5f + 1.2f, newZ);
 		spriteHolderTrans.localPosition = heightOffset;
-		animator.SetInteger(aniStateID, (int)this.aniState);
+		if (GameEngine.customStatic && team == 2) { 
+			animator.SetInteger(aniStateID, (int)kenState); 
+		} else { 
+			animator.SetInteger(aniStateID, (int)this.aState.state); 
+		} 
 
 		if(fieldPosition == 1){
 			if(transform.position.x < -12.25f){

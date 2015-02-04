@@ -14,12 +14,17 @@ public class SuperCamera : MonoBehaviour {
 	
 	// Update is called once per frame
 	void FixedUpdate () {
+		if (GameEngine.customStatic) {
+			transform.position = new Vector3(GameEngine.player1.player.transform.position.x + 6.5f, this.transform.position.y, this.transform.position.z);
+			return;
+		}
+		if (!target) return;
 		float newXpos = target.transform.position.x;
-		if (GameEngine.ball.holder) {
+		if (GameEngine.ball && GameEngine.ball.holder) {
 			newXpos = CalculateCameraPosition();
-		} else if (GameEngine.ball.vel.x > 0f && transform.position.x > newXpos) {
+		} else if (GameEngine.ball && GameEngine.ball.vel.x > 0f && transform.position.x > newXpos) {
 			newXpos = transform.position.x;
-		} else if (GameEngine.ball.vel.x < 0f && transform.position.x < newXpos) {
+		} else if (GameEngine.ball && GameEngine.ball.vel.x < 0f && transform.position.x < newXpos) {
 			newXpos = transform.position.x;
 		}
 		
@@ -30,7 +35,7 @@ public class SuperCamera : MonoBehaviour {
 		}
 		
 		Vector3 newPos = new Vector3(newXpos, this.transform.position.y, this.transform.position.z);
-		float lerpMag = (this.transform.position - newPos).magnitude < 0.1f ? 0.25f : 0.1f;
+		float lerpMag = (this.transform.position - newPos).magnitude < 0.1f ? 1f : 0.1f;
 		if((this.transform.position - newPos).magnitude < 0.05f){
 			return;
 		}else {

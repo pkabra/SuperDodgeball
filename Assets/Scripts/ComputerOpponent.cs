@@ -71,7 +71,7 @@ public class ComputerOpponent : MonoBehaviour {
 	}
 	
 	void MoveToTarget(PlayerDecision p) {
-		if(p.player.kState.state != KineticStates.walk || p.player.kState.state != KineticStates.run) return;
+		if (p.player.kState.state != KineticStates.walk || p.player.kState.state != KineticStates.run) return;
 		float h = 0f;
 		float v = 0f;
 		if (p.player.transform.position.x + 0.4f < p.target.x) {
@@ -113,7 +113,7 @@ public class ComputerOpponent : MonoBehaviour {
 			}
 		} else if (ball.state == BallState.held && ball.holder.team == 2) {
 			PlanAndThrow();
-		} else if (ball.state == BallState.thrown) {
+		} else if (ball.state == BallState.thrown && ball.throwerTeam == 1) {
 			bool catchIt = Random.value < 0.7f;
 			if (distance < 1f && catchIt) {
 				control.a = true;
