@@ -46,7 +46,7 @@ public class GameEngine : MonoBehaviour {
 	
 	public static Controller 	player1 = new Controller();
 	public static Controller	player2 = new Controller();
-
+	
 	public static Camera        cam;
 	
 	public static Sideline      sideline;
@@ -62,22 +62,22 @@ public class GameEngine : MonoBehaviour {
 	
 	public static bool			resetBallOn = false;
 	public bool                 shieldsEnabled = false;
-
+	
 	public bool					singlePlayer = false;
 	public static bool 			limitTeam2AI = false;
 	public static ComputerOpponent	computer;
 	public GameObject           angel = null;
 	public static GameObject    angelPrefab = null;
-
+	
 	public bool					customLevel = false; 
 	public static bool			customStatic = false; 
-
+	
 	// Use this for initialization
 	void Awake () {
 		team1 = new List<Player>();
 		team2 = new List<Player>();
 		ballsack = new List<Ball>();
-
+		
 		cam = this.GetComponentInParent<Camera> ();
 		
 		if (singlePlayer) {
@@ -89,6 +89,10 @@ public class GameEngine : MonoBehaviour {
 	}
 	
 	void Update () {
+		if (Input.GetKeyDown(KeyCode.Escape)) {
+			Application.LoadLevel("open_screen");
+		}
+		
 		if (!customLevel) {
 			HandleClassicControls();
 		} else {
@@ -99,6 +103,7 @@ public class GameEngine : MonoBehaviour {
 	void CustomControls() {
 		float myLocalTime = Time.time;
 		if (player1.player == null) {
+			if (team1.Count == 0) return;
 			player1.ChangeControlTo(team1[0]);
 		}
 		if(Input.GetKeyDown(KeyCode.G)){
@@ -397,7 +402,7 @@ public class GameEngine : MonoBehaviour {
 							break;
 						}
 					}
-
+					
 					if (freeBall) {
 						player1.player.AttemptCatchAtTime(Time.time);
 					} else {
@@ -440,7 +445,7 @@ public class GameEngine : MonoBehaviour {
 					break;
 				}
 			}
-
+			
 			if (!held1) {
 				foreach(Player p in team1) {
 					if (player1.player.kState.state != KineticStates.walk) break;
@@ -462,8 +467,10 @@ public class GameEngine : MonoBehaviour {
 			} else if (player1.a) {
 				// Pickup or pass
 				if (player1.player.aState.state == ActionStates.holding) {
-					// Pass
-					player1.player.heldBall.PassTo(passTarget);
+					if(player1.player.aniState != AniState.Windup){
+						// Pass
+						StartCoroutine(player1.player.WindUpPass());
+					}
 				} else if(player1.player.aState.state == ActionStates.passing) {
 					// Pickup
 					if (Time.time - player1.player.aState.startTime > 0.5f) {
@@ -528,7 +535,7 @@ public class GameEngine : MonoBehaviour {
 					break;
 				}
 			}
-
+			
 			if (!held2) {
 				foreach(Player p in team2) {
 					if (player2.player.kState.state != KineticStates.walk) break;
@@ -550,8 +557,10 @@ public class GameEngine : MonoBehaviour {
 			} else if (player2.a) {
 				// Pickup or pass
 				if (player2.player.aState.state == ActionStates.holding) {
-					// Pass
-					player2.player.heldBall.PassTo(passTarget);
+					if(player2.player.aniState != AniState.Windup){
+						// Pass
+						StartCoroutine(player2.player.WindUpPass());
+					}
 				} else if(player2.player.aState.state == ActionStates.passing) {
 					// Pickup
 					if (Time.time - player2.player.aState.startTime > 0.5f) {
@@ -620,7 +629,7 @@ public class GameEngine : MonoBehaviour {
 			}
 		}
 	}
-
+	
 	public static Ball GetClosestBall(Vector3 poi){
 		float minDist = 1234.0f;
 		Ball closest = null;

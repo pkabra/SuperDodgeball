@@ -8,7 +8,7 @@ public class StageSelect : MonoBehaviour {
 	bool			selectorOn = true;
 	int				selectorFlashDelay = 5;
 	
-	int[]			stagePos = new int[2];
+	int[]			stagePos = new int[3];
 	int				curStagePos = 0;
 	
 	public Canvas 	screen1;
@@ -19,10 +19,15 @@ public class StageSelect : MonoBehaviour {
 	void Start () {
 		stagePos[0] = 168;
 		stagePos[1] = 138;
+		stagePos[2] = 106;
 	}
 	
 	// Update is called once per frame
 	void Update () {
+		if (Input.GetKeyDown(KeyCode.Escape)) {
+			Application.LoadLevel("open_screen");
+		}
+
 		if(Input.GetKeyDown(KeyCode.Return)) {
 			if (select) {
 				GoToStage();
@@ -71,9 +76,11 @@ public class StageSelect : MonoBehaviour {
 		// Check which stage to load
 		string stage;
 		if (curStagePos == 0) {
-			stage = "classic_japan";
+			stage = "classic_single";
+		} else if (curStagePos == 1){
+			stage = "custom_battle";
 		} else {
-			stage = "icestage";
+			stage = "classic_japan";
 		}
 		
 		// Load that stage
@@ -90,13 +97,13 @@ public class StageSelect : MonoBehaviour {
 	// Move the stage select pointer up
 	void StageSelectUp() {
 		curStagePos--;
-		curStagePos = curStagePos % 2;
-		curStagePos = curStagePos < 0 ? curStagePos * -1 : curStagePos;
+		curStagePos = curStagePos % 3;
+		curStagePos = curStagePos < 0 ? curStagePos + 3 : curStagePos;
 	}
 	
 	// Moves the stage select pointer down
 	void StageSelectDown() {
 		curStagePos++;
-		curStagePos = curStagePos % 2;
+		curStagePos = curStagePos % 3;
 	}
 }

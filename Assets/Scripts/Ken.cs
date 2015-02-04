@@ -11,7 +11,7 @@ public class Ken : MonoBehaviour {
 	public Vector3	target = new Vector3(1.6f, 0f, 0f);
 	public float	lastTargetSetTime = -4f;
 	public float 	lastBallThrow = -4f;
-
+	
 	public int[] kenAnimationFrames = new int[10] {0, 0, 9, 0, 33, 12, 11, 12, 13, 6};
 	private int framesSinceLastChange = 0;
 	private int framesTillAniEnd = 0;
@@ -28,40 +28,39 @@ public class Ken : MonoBehaviour {
 	void Start () {
 		player = gameObject.GetComponent<Player>();
 	}
-
+	
 	void FixedUpdate() {
 		if (hasTarget) {
 			Move ();
 		} else {
-			PickNewPosition();
-		}
-		
-		if (player.kenState == KenState.idle && framesSinceLastChange > 20) {
-			// Don't fire 20% of the time
-			int rand = Random.Range(0, 13);
-			if (rand < 11) {
-				KenState mode = KenState.righty;
-				switch (rand) {
-				case 0: mode = KenState.hadouken;
-					break;
-				case 2: mode = KenState.uppercut;
-					break;
-				case 4: mode = KenState.highkick;
-					break;
-				case 6: mode = KenState.forwardhigh;
-					break;
-				case 8: mode = KenState.spinkick;
-					break;
-				default: mode = KenState.righty;
-					break;
+			if (player.kenState == KenState.idle && framesSinceLastChange > 20) {
+				// Don't fire 20% of the time
+				int rand = Random.Range(0, 13);
+				if (rand < 11) {
+					KenState mode = KenState.righty;
+					switch (rand) {
+					case 0: mode = KenState.hadouken;
+						break;
+					case 2: mode = KenState.uppercut;
+						break;
+					case 4: mode = KenState.highkick;
+						break;
+					case 6: mode = KenState.forwardhigh;
+						break;
+					case 8: mode = KenState.spinkick;
+						break;
+					default: mode = KenState.righty;
+						break;
+					}
+					if (mode == KenState.righty) {
+						mode = Random.Range(0, 2) == 0 ? KenState.righty : KenState.medkick;
+					}
+					framesTillAniEnd = kenAnimationFrames[(int)mode];
+					framesSinceLastChange = 0;
+					Fire (mode);
 				}
-				if (mode == KenState.righty) {
-					mode = Random.Range(0, 2) == 0 ? KenState.righty : KenState.medkick;
-				}
-				framesTillAniEnd = kenAnimationFrames[(int)mode];
-				framesSinceLastChange = 0;
-				Fire (mode);
 			}
+			PickNewPosition();
 		}
 		
 		DestroyTheBalls();
@@ -125,6 +124,7 @@ public class Ken : MonoBehaviour {
 		if (possibleY < -3.25f) possibleY = -3.2f;
 		target = player.transform.position;
 		target.y = possibleY;
+		target.x = 1.6f;
 		lastTargetSetTime = Time.time;
 		hasTarget = true;
 	}
@@ -133,23 +133,23 @@ public class Ken : MonoBehaviour {
 		// Set new state and timestamp it
 		player.kenState = inMode;
 		kenStateChangeTime = Time.time;
-
+		
 		// Type of throw execution logic switch
 		switch(inMode){
 		case KenState.hadouken:
-			StartCoroutine(HadoukenLogic(PowerMode.hadouken, 4));
+			StartCoroutine(HadoukenLogic(PowerMode.hadouken, 6));
 			break;
 		case KenState.forwardhigh:
 			StartCoroutine(HadoukenLogic(PowerMode.wave, 4));
 			break;
 		case KenState.medkick:
-			StartCoroutine(HadoukenLogic(PowerMode.none, 4));
+			StartCoroutine(HadoukenLogic(PowerMode.none, 2));
 			break;
 		case KenState.highkick:
 			StartCoroutine(HadoukenLogic(PowerMode.fastball, 4));
 			break;
 		case KenState.uppercut:
-			StartCoroutine(HadoukenLogic(PowerMode.tsunami, 4));
+			StartCoroutine(HadoukenLogic(PowerMode.tsunami, 6));
 			break;
 		case KenState.spinkick:
 			StartCoroutine(HadoukenLogic(PowerMode.breaker, 4)); // TODO THIS NEEDS ITS OWN FUNCTION
@@ -161,61 +161,91 @@ public class Ken : MonoBehaviour {
 			print ("Didn't do anything in Fire()");
 			break;
 		}
-//		if (!GameEngine.player1.player) return;
-//		
-//		GameObject a = Instantiate(ballPrefab) as GameObject;
-//		Ball b = a.GetComponent<Ball>();
-//		GameEngine.ballsack.Add(b);
-//		player.heldBall = b;
-//		
-//		Vector3 ballPos = transform.position;
-//		ballPos.x -= 1f;
-//		b.transform.position = ballPos;
-//		
-//		Vector3 shotTarget = GameEngine.player1.player.transform.position;
-//		shotTarget.y = transform.position.y;
-//		
-//		player.kenState = KenState.righty;
-//		kenStateChangeTime = Time.time;
-//		
-//		player.ThrowAt(shotTarget);
-//		b.ThrowToPos(shotTarget, 1f);
-//		lastBallThrow = Time.time;
+		//		if (!GameEngine.player1.player) return;
+		//		
+		//		GameObject a = Instantiate(ballPrefab) as GameObject;
+		//		Ball b = a.GetComponent<Ball>();
+		//		GameEngine.ballsack.Add(b);
+		//		player.heldBall = b;
+		//		
+		//		Vector3 ballPos = transform.position;
+		//		ballPos.x -= 1f;
+		//		b.transform.position = ballPos;
+		//		
+		//		Vector3 shotTarget = GameEngine.player1.player.transform.position;
+		//		shotTarget.y = transform.position.y;
+		//		
+		//		player.kenState = KenState.righty;
+		//		kenStateChangeTime = Time.time;
+		//		
+		//		player.ThrowAt(shotTarget);
+		//		b.ThrowToPos(shotTarget, 1f);
+		//		lastBallThrow = Time.time;
 	}
-
+	
 	IEnumerator HadoukenLogic(PowerMode mode_in, int throwFrame){
 		if (!GameEngine.player1.player) yield break;
-
+		
 		lastBallThrow = Time.time;
 		
 		Vector3 StartPos = this.transform.position;
 		StartPos.x -= 1f;
-
+		
 		// Set shot target
 		Vector3 shotTarget = GameEngine.player1.player.transform.position;
 		shotTarget.y = transform.position.y;
-
+		
 		// Allow first several frames of animation to execute
 		while(framesSinceLastChange < throwFrame){
 			yield return null;
 		}
-
+		
 		Ball b = makeBallAtPos(StartPos);
 		player.heldBall = b;
-
+		
 		// Throw the ball and set ball state
 		player.ThrowAt(shotTarget);
 		b.ThrowToPos(shotTarget, 1f);
 		b.state = BallState.powered;
 		b.height = 1.5f;
 		b.mode = mode_in;
+		
+		if(mode_in == PowerMode.breaker ){
+			// Allow first several frames of animation to execute
+			while(framesSinceLastChange < throwFrame + 8){
+				yield return null;
+			}
+			Ball c = makeBallAtPos(StartPos);
+			player.heldBall = c;
+			
+			// Throw the ball and set ball state
+			player.ThrowAt(shotTarget);
+			c.ThrowToPos(shotTarget, 1f);
+			c.state = BallState.powered;
+			c.height = 1.5f;
+			c.mode = mode_in;
+			
+			// Allow first several frames of animation to execute
+			while(framesSinceLastChange < throwFrame + 16){
+				yield return null;
+			}
+			Ball d = makeBallAtPos(StartPos);
+			player.heldBall = d;
+			
+			// Throw the ball and set ball state
+			player.ThrowAt(shotTarget);
+			d.ThrowToPos(shotTarget, 1f);
+			d.state = BallState.powered;
+			d.height = 1.5f;
+			d.mode = mode_in;
+		}
 	}
-
+	
 	Ball makeBallAtPos(Vector3 pos){
 		GameObject a = Instantiate(ballPrefab, pos, transform.rotation) as GameObject;
 		Ball b = a.GetComponent<Ball>();
 		GameEngine.ballsack.Add(b);
 		return b;
 	}
-
+	
 }

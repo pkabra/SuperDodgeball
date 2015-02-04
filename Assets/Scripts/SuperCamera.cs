@@ -15,12 +15,18 @@ public class SuperCamera : MonoBehaviour {
 	// Update is called once per frame
 	void FixedUpdate () {
 		if (GameEngine.customStatic) {
-			transform.position = new Vector3(GameEngine.player1.player.transform.position.x + 6.5f, this.transform.position.y, this.transform.position.z);
+			Vector3 thingy = new Vector3(GameEngine.player1.player.transform.position.x + 6.5f, this.transform.position.y, this.transform.position.z);
+			if(thingy.x > rightLimit){ 
+				thingy.x = rightLimit; 
+			} else if (thingy.x < leftLimit){
+				thingy.x = leftLimit;
+			}
+			transform.position = thingy;
 			return;
 		}
 		if (!target) return;
 		if (GameEngine.ballsack.Count == 0) return;
-
+		
 		Ball tempBall = GameEngine.ballsack[0];
 		float newXpos = target.transform.position.x;
 		if (tempBall && tempBall.holder) {

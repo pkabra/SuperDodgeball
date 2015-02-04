@@ -40,10 +40,10 @@ public class Ball : MonoBehaviour {
 	private int breakerMode = 0;
 	public Vector3 prevPos = Vector3.zero;
 	private Vector3 targetPos = Vector3.zero;
-
+	
 	private GameObject shadow = null;
 	
-
+	
 	void Awake() {
 		spriteHolderTrans = this.transform.FindChild("SpriteHolder");
 		animator = this.gameObject.GetComponentInChildren<Animator>();
@@ -51,7 +51,7 @@ public class Ball : MonoBehaviour {
 		aniStateID = Animator.StringToHash("state");
 		shadow = this.transform.FindChild("ballShadow").gameObject;
 	}
-
+	
 	// Use this for initialization
 	void Start () {
 		GameEngine.ballsack.Add(this);
@@ -62,7 +62,7 @@ public class Ball : MonoBehaviour {
 	void FixedUpdate () {
 		// Save prev position info
 		prevPos = transform.position;
-
+		
 		shadow.renderer.enabled = true;
 		
 		// State specific things
@@ -92,7 +92,7 @@ public class Ball : MonoBehaviour {
 		} else if(state == BallState.held){
 			shadow.renderer.enabled = false;
 		}
-
+		
 		if (state == BallState.rest) {
 			if (holder) {
 				holder.heldBall = null;
@@ -170,7 +170,7 @@ public class Ball : MonoBehaviour {
 				print ("Pass Logic Error");
 			}
 		}
-
+		
 		passOrigin = this.transform.position;
 		totalTrajDist = Mathf.Max(vecToTarg.magnitude - 0.2f, 0.2f);
 		if(trajectory == Trajectory.EastWestHigh){
@@ -185,9 +185,10 @@ public class Ball : MonoBehaviour {
 		holder.aState.state = ActionStates.passing;
 		holder.aState.startTime = Time.time;
 		StartCoroutine(holder.TempNoCollide(0.2f)); // Prevent holder from hitting self
+		print ("heldball is null");
 		holder.heldBall = null;
 		holder = null;
-			
+		
 		//determine time for ball to get to target
 		float distToTarg = ((Vector2)this.transform.position - (Vector2)target.transform.position).magnitude;
 		float timeToTarg = distToTarg / ((vel *  passSpeedMult).magnitude);
@@ -203,7 +204,7 @@ public class Ball : MonoBehaviour {
 			StartCoroutine(holder.WindUpThrow(targPos));
 		}
 	}
-
+	
 	public void newThrowToPos(Vector3 targPos, float velMult)
 	{
 		// release ball from holder and enable collider
@@ -250,7 +251,7 @@ public class Ball : MonoBehaviour {
 	void VerticalSurfaceBounce(Collider other){
 		//Set up a raycast
 		Vector3 dir = (other.transform.position - this.transform.position).normalized;
-//		Vector3 origin = prevPos + transform.lossyScale.magnitude * dir;
+		//		Vector3 origin = prevPos + transform.lossyScale.magnitude * dir;
 		Ray ray = new Ray(prevPos, dir);
 		RaycastHit hit;
 		other.Raycast(ray, out hit, 20.0f);
@@ -262,16 +263,16 @@ public class Ball : MonoBehaviour {
 		mode = PowerMode.none;
 		wreckingMode = 0;
 		breakerMode = 0;
-
+		
 		// Added height for bounce off of a player
 		if(other.gameObject.GetComponent<Player>()){
 			heightVel = 10.0f;
 		}
 	}
-
+	
 	void PassPlayerBounce(Collider other){
 		float dir = other.transform.position.x - this.transform.position.x;
-				
+		
 		// Bounce off the surface
 		vel = Vector3.Reflect(vel, new Vector3(-dir, 0f, 0f)) * 0.8f;
 		state = BallState.free;
@@ -285,7 +286,7 @@ public class Ball : MonoBehaviour {
 	// This function allows the ball to fall responding to 'gravity' and bounce off the ground.
 	// The ball loses velocity with each bounce relative to the 'bounciness' variable.
 	void FreeBallinLogic(){
-
+		
 		// Put ball at rest if it is moving super slow
 		if(height < 0.05f && (heightVel < 0.38f && heightVel > 0.33f)){
 			state = BallState.rest;
@@ -326,7 +327,7 @@ public class Ball : MonoBehaviour {
 		float percentOfMax = 1f - (Mathf.Pow (distFromMidpoint,2f) / halfDistSqrd);
 		float offset = 5.0f;
 		float maxHeightMult = 0.06f * (halfDistSqrd + offset);
-
+		
 		offset = height; // reuse of offset variable
 		
 		// These are different types of trajectories. It seemed that passes from different
@@ -351,13 +352,13 @@ public class Ball : MonoBehaviour {
 		} else {
 			print ("Error in PassTrajectoryLogic()");
 		}
-
+		
 		if(height <= 0){
 			heightVel = (height - offset) / Time.fixedDeltaTime;
 			state = BallState.free;
 		}
 	}
-
+	
 	public IEnumerator BallTempNoCollide(float secs){
 		float endTime = Time.time + secs;
 		this.collider.enabled = false;
@@ -366,7 +367,7 @@ public class Ball : MonoBehaviour {
 		}
 		this.collider.enabled = true;
 	}
-
+	
 	void BallOnBallAction(Collider other){
 		Vector3 norm = other.transform.position + ((SphereCollider)other).center * other.transform.lossyScale.x - prevPos;
 		norm.z = 0f;
@@ -382,7 +383,7 @@ public class Ball : MonoBehaviour {
 			throwerTeam = 1;
 		}
 	}
-
+	
 	bool JumpThrowLogic(){
 		float distToTarget = Vector3.Distance(transform.position, targetPos);
 		float offset = height;
@@ -398,7 +399,7 @@ public class Ball : MonoBehaviour {
 		}
 		return true;
 	}
-
+	
 	void BallCollisionLogic(Collider other){
 		if(state == BallState.held){ // Do nothing if ball held
 			return;
@@ -432,7 +433,7 @@ public class Ball : MonoBehaviour {
 				if(throwerTeam == pOther.team ){
 					return; // Do not hit own player with thrown ball
 				}
-
+				
 				if(state == BallState.powered && mode == PowerMode.wreckingball){
 					if(wreckingMode == 0){
 						timeStamp = Time.time;
@@ -441,7 +442,7 @@ public class Ball : MonoBehaviour {
 					pOther.PlayerHit(this);
 					return;
 				}
-
+				
 				if((heightDifference > pOther.heightHitbox) || heightDifference < 0f){
 					return; // Do nothing because the ball went over or under the player
 				} else if(pOther.aState.state == ActionStates.catching && pOther.isFacingBall()){
@@ -475,22 +476,22 @@ public class Ball : MonoBehaviour {
 			}
 		}
 	}
-
+	
 	void WaveBallLogic(){
 		Vector3 waveVec = new Vector3(vel.x , Mathf.Sin((Time.time - timeStamp)* 10.0f + Mathf.PI / 2f), 0f);
 		vel = waveVec;
 	}
-
+	
 	void TsunamiLogic(){
 		height = Mathf.Sin((Time.time - timeStamp)* 10.0f + Mathf.PI / 2f) + 1.3f;
 	}
-
+	
 	void CorkscrewLogic(){
 		Vector3 waveVec = new Vector3(vel.x , 0.5f * Mathf.Sin((Time.time - timeStamp)* 16.0f + Mathf.PI / 2f), 0f);
 		vel = waveVec;
 		height += Mathf.Sin((Time.time - timeStamp)* 10.0f + Mathf.PI / 2f);
 	}
-
+	
 	void WreckingBallLogic(){
 		mode = PowerMode.wreckingball;
 		if(wreckingMode == 1){
@@ -503,7 +504,7 @@ public class Ball : MonoBehaviour {
 			}
 		} else { return; }
 	}
-
+	
 	void PowerBallLogic(){
 		switch(mode){
 		case PowerMode.fastball: 
@@ -528,7 +529,7 @@ public class Ball : MonoBehaviour {
 			break;
 		}
 	}
-
+	
 	void BreakerballLogic(){
 		if(breakerMode == 0){
 			timeStamp = Time.time;
@@ -552,7 +553,7 @@ public class Ball : MonoBehaviour {
 		}
 		print (breakerMode);
 	}
-
+	
 	public float getThrowSpeed(){
 		if (!holder) return 1f; 
 		float speed = 0f;
