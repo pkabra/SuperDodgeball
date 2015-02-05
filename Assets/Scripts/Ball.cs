@@ -20,7 +20,7 @@ public class Ball : MonoBehaviour {
 	
 	// All variables below this point might be able to be moved inside functions,
 	// check on a case by case basis before doing so.
-	public float passSpeedMult = 3f;
+	public float passSpeedMult = 4f;
 	public float throwSpeedMult = 5f;
 	public float catchRadius = 0.5f;
 	public float YCompOfZ = 0.5f; // The Y component of the Height axis, NOT the worldspace Z
@@ -224,7 +224,7 @@ public class Ball : MonoBehaviour {
 		if(holder && holder.height > 0.001f){
 			trajectory = Trajectory.jump;
 			totalTrajDist = dir.magnitude + 0.3f;
-			maxHeight = holder.height - 1.3f;
+			maxHeight = holder.height * 0.5f + 1.3f;
 			height = maxHeight;
 		} else {
 			trajectory = Trajectory.none;

@@ -47,6 +47,8 @@ public class Player : MonoBehaviour {
 	public bool             goAround = false; // Around the World, Around the WOOOORLD!!!
 	public bool             windupThr = false;
 	public bool             windupPass = false;
+	public bool            	jumpWindupA = false;
+	public bool            	jumpWindupB = false;
 	
 	public float            jumpVelX = 0f;
 	public float            jumpVelY = 0f;
@@ -71,6 +73,8 @@ public class Player : MonoBehaviour {
 	public KenState			kenState = KenState.idle; 
 	
 	public Ball				heldBall = null;
+
+	public int runDir = 0;
 	
 	// Use this for initialization
 	void Start () {
@@ -121,7 +125,7 @@ public class Player : MonoBehaviour {
 		if(GameEngine.customStatic && team == 2) return;
 		
 		if(other.gameObject.tag == "InfieldBoundary"){
-			if(kState.state == KineticStates.walk && !goneOverboard)
+			if((kState.state == KineticStates.walk || kState.state == KineticStates.run) && !goneOverboard)
 			{
 				InfieldCollideLogic(other);
 			}
@@ -166,7 +170,7 @@ public class Player : MonoBehaviour {
 			
 			// Movement
 			if (kState.state == KineticStates.run) {
-				vel.x = h * 6f;
+				vel.x = runDir * 6f;
 				vel.y = v * 1f;
 			} else {
 				vel.x = h * 2f;
@@ -174,7 +178,7 @@ public class Player : MonoBehaviour {
 			}
 		}
 		
-		if (h < 0f || (team == 1 && fieldPosition == 4)) {
+		if (vel.x < 0f || (team == 1 && fieldPosition == 4)) {
 			if (v < 0f) {
 				facing = PlayerFacing.southWest;
 			} else if (v > 0f) {
@@ -182,7 +186,7 @@ public class Player : MonoBehaviour {
 			} else {
 				facing = PlayerFacing.west;
 			}
-		} else if (h > 0f || (team == 2 && fieldPosition == 4)) {
+		} else if (vel.x > 0f || (team == 2 && fieldPosition == 4)) {
 			if (v < 0f) {
 				facing = PlayerFacing.southEast;
 			} else if (v > 0f) {
@@ -258,15 +262,15 @@ public class Player : MonoBehaviour {
 		float heightDifference = theBall.height - this.height; 
 		float delta = Vector3.Distance(transform.position, theBall.transform.position);
 		if (delta < 0.5f && ((heightDifference <= heightHitbox) && heightDifference >= 0f)) {
-			StartCoroutine(DelayBallPickUp(theBall));
-		} else {
-			Crouch();
-		}
+			theBall.StateHeld(this);
+		} 
+		
+		Crouch();
 	}
 	
 	public void Crouch() {
-		Movement (0f,0f);
 		kState.state = KineticStates.crouch;
+		Movement (0f,0f);
 		aniState = AniState.Crouching;
 		kState.startTime = Time.time;
 		heightHitbox = 0.5f;
@@ -292,7 +296,7 @@ public class Player : MonoBehaviour {
 	
 	public float ThrowAt(Vector3 targetPos){
 		if(kState.state == KineticStates.run){
-			if((Time.time - kState.startTime) > 0.8f && (Time.time - kState.startTime) < 1.4f){
+			if((Time.time - kState.startTime) > 0.7f && (Time.time - kState.startTime) < 1.8f){
 				heldBall.state = BallState.powered;
 				heldBall.mode = GroundAbility;
 				heldBall.animator.SetInteger(aniStateID, (int)GroundAbility);
@@ -368,6 +372,9 @@ public class Player : MonoBehaviour {
 		if(this != null){
 			this.aState.state = ActionStates.none;
 			this.aniState = AniState.Standing;
+			if (kState.state == KineticStates.run) {
+				kState.state = KineticStates.walk;
+			}
 		}
 	}
 	
@@ -427,7 +434,11 @@ public class Player : MonoBehaviour {
 			} else {
 				PassTargetingLogicTeam2();
 			}
-			heldBall.height = height * 0.5f + 1.3f;
+			if(kState.state == KineticStates.crouch){
+				heldBall.height = 0f;
+			} else {
+				heldBall.height = height * 0.5f + 1.3f;
+			}
 			Vector3 pos = transform.position;
 			if (facing == PlayerFacing.west || facing == PlayerFacing.northWest || facing == PlayerFacing.southWest) {
 				pos.x -= heldBall.heldOffsetX;
@@ -492,15 +503,20 @@ public class Player : MonoBehaviour {
 	}
 	
 	public void Jump(float h) {
-		if (kState.state != KineticStates.walk && kState.state != KineticStates.run) return;
+		jumpWindupA = false;
+		jumpWindupB = false;
+		
+		if ((int)kState.state > 3) return;
 		if (height > 0f) return;
+		
+		aniState = AniState.Jumping;
 		
 		if (kState.state == KineticStates.run) {
 			kState.state = KineticStates.runjump;
 			jumpVelX = 0f;
-			if (h > 0f) {
+			if (runDir > 0) {
 				jumpVelX = 0.1f;
-			} else if (h < 0f) {
+			} else if (runDir < 0) {
 				jumpVelX = -0.1f;
 			}
 			jumpVelY = 35f;
@@ -519,9 +535,24 @@ public class Player : MonoBehaviour {
 		height = 0.1f;
 	}
 	
+	public IEnumerator JumpDelay(char c){
+		float endTime = Time.time + 0.2f;
+		if(c == 'A') {
+			jumpWindupA = true;
+		}
+		else if(c == 'B') {
+			jumpWindupB = true;
+		}
+		while(Time.time < endTime){
+			yield return null;
+		}
+		jumpWindupA = false;
+		jumpWindupB = false;
+	}
+	
 	void JumpLogic() {
-		print ("jumping!");
-		print (height);
+//		print ("jumping!");
+//		print (height);
 		jumpVelY += GameEngine.gravity*3;
 		height += jumpVelY * Time.fixedDeltaTime;
 
@@ -706,6 +737,12 @@ public class Player : MonoBehaviour {
 			//				desiredPos.x = this.transform.position.x; // helps resolve colliding with more than one collider
 			//				desiredPos.y = this.transform.position.y;
 			//			}
+
+			if (heldBall && aniState != AniState.Throwing && aniState != AniState.JumpThrowing &&
+			    aniState != AniState.Windup && aniState != AniState.Passing &&
+			    (hitOnTop || hitOnBottom || hitOnLeft || hitOnRight)) {
+				DropBall();
+			}
 			
 			this.transform.position = desiredPos;
 			
@@ -720,6 +757,14 @@ public class Player : MonoBehaviour {
 				heldBall.transform.position = pos;
 			}
 		}
+	}
+
+	public void DropBall() {
+		heldBall.holder = null;
+		heldBall.mode = PowerMode.none;
+		heldBall.state = BallState.free;
+		heldBall = null;
+		aState.state = ActionStates.none;
 	}
 	
 	void PassTargetingLogicTeam1(){

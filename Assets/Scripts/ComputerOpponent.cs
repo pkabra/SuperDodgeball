@@ -99,6 +99,12 @@ public class ComputerOpponent : MonoBehaviour {
 	}
 	
 	void ControlPlayerMove() {
+		foreach(PlayerDecision p in team) {
+			if (p.player.GetInstanceID() == control.player.GetInstanceID()) {
+				controlDecision = p;
+			}
+		}
+
 		Ball ball = GameEngine.ballsack[0];
 		
 		if (control.player.fieldPosition != 1) {
@@ -199,6 +205,7 @@ public class ComputerOpponent : MonoBehaviour {
 		controlDecision.target.x = 0.3f;
 		if (control.player.transform.position.x > 4f) {
 			control.player.kState.state = KineticStates.run;
+			control.player.runDir = -1;
 		}
 		control.h = -1f;
 	}

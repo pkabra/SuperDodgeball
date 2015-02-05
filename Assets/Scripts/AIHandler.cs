@@ -159,7 +159,11 @@ public class AIHandler : MonoBehaviour {
 					extraSteps = 20;
 				}
 			} else {
-				if (player.transform.position.x < 1f && player.facing == PlayerFacing.east) {
+				if (player.transform.position.x < 1f &&
+				    player.facing == PlayerFacing.east &&
+				    (player.aniState == AniState.Throwing ||
+				 	player.aniState == AniState.Windup ||
+				 	player.aniState == AniState.Passing)) {
 					player.Movement(1f, 0f);
 				} else if(player.transform.position.x > -0.193) {
 					player.Movement(-1f, 0f);
@@ -180,7 +184,11 @@ public class AIHandler : MonoBehaviour {
 					extraSteps = 20;
 				}
 			} else {
-				if (player.transform.position.x > -1f && player.facing == PlayerFacing.west) {
+				if (player.transform.position.x > -1f &&
+				    player.facing == PlayerFacing.west &&
+				    (player.aniState == AniState.Throwing ||
+					 player.aniState == AniState.Windup ||
+					 player.aniState == AniState.Passing)) {
 					player.Movement(-1f, 0f);
 				} else if(player.transform.position.x < 0.193) {
 					player.Movement(1f, 0f);

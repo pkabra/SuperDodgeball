@@ -1,8 +1,12 @@
 ﻿<Properties>
-  <MonoDevelop.Ide.Workspace />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Scripts\ComputerOpponent.cs">
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Scripts/AIHandler.cs">
     <Files>
-      <File FileName="Assets\Scripts\ComputerOpponent.cs" Line="210" Column="1" />
+      <File FileName="Assets/Scripts/GameEngine.cs" Line="410" Column="35" />
+      <File FileName="Assets/Scripts/AIHandler.cs" Line="195" Column="13" />
+      <File FileName="Assets/Scripts/ComputerOpponent.cs" Line="191" Column="23" />
+      <File FileName="Assets/Scripts/Player.cs" Line="544" Column="23" />
+      <File FileName="Assets/Scripts/Ball.cs" Line="30" Column="35" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>

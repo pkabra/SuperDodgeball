@@ -28,7 +28,6 @@ public class GameEngine : MonoBehaviour {
 		public void ChangeControlTo(Player p) {
 			if (player != null) {
 				player.AIControl = true;
-				player.Movement (0f, 0f); // To signal that the player ain't moving no more.
 				//player.vel = Vector3.zero;
 			}
 			p.AIControl = false;
@@ -122,14 +121,16 @@ public class GameEngine : MonoBehaviour {
 					if(player1.player.aniState != AniState.Windup){
 						player1.player.aniState = AniState.Running;
 					}
+				} else if (player1.player.kState.state == KineticStates.run) {
+					if (player1.player.vel.x > 0f) {
+						player1.player.kState.state = KineticStates.walk;
+						player1.player.kState.startTime = Time.time;
+						if(player1.player.aniState != AniState.Windup){
+							player1.player.aniState = AniState.Walking;
+						}
+					}
 				}
 				player1.lastLeftKeyPress = myLocalTime;
-			}
-			if (Input.GetKeyUp("a") || (Input.GetKeyUp(KeyCode.LeftArrow) && singlePlayer)) {
-				player1.player.kState.state = KineticStates.walk;
-				if(player1.player.aniState != AniState.Windup){
-					player1.player.aniState = AniState.Walking;
-				}
 			}
 			// right
 			if(Input.GetKeyDown("d") || (Input.GetKeyDown(KeyCode.RightArrow) && singlePlayer)) {
@@ -143,11 +144,13 @@ public class GameEngine : MonoBehaviour {
 					}
 				}
 				player1.lastRightKeyPress = Time.time;
-			}
-			if (Input.GetKeyUp("d") || (Input.GetKeyUp(KeyCode.RightArrow) && singlePlayer)) {
-				player1.player.kState.state = KineticStates.walk;
-				if(player1.player.aniState != AniState.Windup){
-					player1.player.aniState = AniState.Walking;
+			} else if (player1.player.kState.state == KineticStates.run) {
+				if (player1.player.vel.x < 0f) {
+					player1.player.kState.state = KineticStates.walk;
+					player1.player.kState.startTime = Time.time;
+					if(player1.player.aniState != AniState.Windup){
+						player1.player.aniState = AniState.Walking;
+					}
 				}
 			}
 		}
@@ -178,12 +181,37 @@ public class GameEngine : MonoBehaviour {
 		}
 		
 		foreach (Player player in team1) {
-			if ((player.transform.position.x > -0.193f ||
-			     sideline.isBeyondLeft(player.transform.position))
-			    && player.fieldPosition == 1) {
+			if (sideline.isBeyondLeft(player.transform.position) && player.fieldPosition == 1) {
 				player.goneOverboard = true;
 			} else if(!player.playerAI.inReturnMode) {
 				player.goneOverboard = false;
+			}
+		}
+
+		HandleOverRun(player1);
+	}
+
+	void HandleOverRun(Controller p) {
+		if ((p.player.team == 1 && p.player.transform.position.x > -0.1f) ||
+		    (p.player.team == 2 && p.player.transform.position.x < 0.1f)) {
+			if (p.player.kState.state == KineticStates.run) {
+				if (p.player.aniState == AniState.Windup ||
+					p.player.aniState == AniState.Throwing ||
+				    p.player.aniState == AniState.JumpThrowing ||
+				    p.player.aniState == AniState.Passing) {
+					p.player.goneOverboard = true;
+				} else {
+					player1.player.kState.state = KineticStates.walk;
+					player1.player.kState.startTime = Time.time;
+					if(player1.player.aniState != AniState.Windup){
+						player1.player.aniState = AniState.Walking;
+					}
+					if (p.player.heldBall) {
+						p.player.DropBall();
+					}
+				}
+			} else if (p.player.kState.state == KineticStates.walk) {
+				p.player.goneOverboard = true;
 			}
 		}
 	}
@@ -207,17 +235,20 @@ public class GameEngine : MonoBehaviour {
 						player1.player.kState.startTime = myLocalTime;
 					}
 					player1.player.kState.state = KineticStates.run;
+					player1.player.runDir = -1;
 					if(player1.player.aniState != AniState.Windup){
 						player1.player.aniState = AniState.Running;
 					}
+				} else if (player1.player.kState.state == KineticStates.run) {
+					if (player1.player.vel.x > 0f) {
+						player1.player.kState.state = KineticStates.walk;
+						player1.player.kState.startTime = Time.time;
+						if(player1.player.aniState != AniState.Windup){
+							player1.player.aniState = AniState.Walking;
+						}
+					}
 				}
 				player1.lastLeftKeyPress = myLocalTime;
-			}
-			if (Input.GetKeyUp("a") || (Input.GetKeyUp(KeyCode.LeftArrow) && singlePlayer)) {
-				player1.player.kState.state = KineticStates.walk;
-				if(player1.player.aniState != AniState.Windup){
-					player1.player.aniState = AniState.Walking;
-				}
 			}
 			// right
 			if(Input.GetKeyDown("d") || (Input.GetKeyDown(KeyCode.RightArrow) && singlePlayer)) {
@@ -226,17 +257,20 @@ public class GameEngine : MonoBehaviour {
 						player1.player.kState.startTime = myLocalTime;
 					}
 					player1.player.kState.state = KineticStates.run;
+					player1.player.runDir = 1;
 					if(player1.player.aniState != AniState.Windup){
 						player1.player.aniState = AniState.Running;
 					}
+				} else if (player1.player.kState.state == KineticStates.run) {
+					if (player1.player.vel.x < 0f) {
+						player1.player.kState.state = KineticStates.walk;
+						player1.player.kState.startTime = Time.time;
+						if(player1.player.aniState != AniState.Windup){
+							player1.player.aniState = AniState.Walking;
+						}
+					}
 				}
 				player1.lastRightKeyPress = Time.time;
-			}
-			if (Input.GetKeyUp("d") || (Input.GetKeyUp(KeyCode.RightArrow) && singlePlayer)) {
-				player1.player.kState.state = KineticStates.walk;
-				if(player1.player.aniState != AniState.Windup){
-					player1.player.aniState = AniState.Walking;
-				}
 			}
 		}
 		
@@ -252,14 +286,16 @@ public class GameEngine : MonoBehaviour {
 					if(player2.player.aniState != AniState.Windup){
 						player2.player.aniState = AniState.Running;
 					}
+				} else if (player2.player.kState.state == KineticStates.run) {
+					if (player2.player.vel.x > 0f) {
+						player2.player.kState.state = KineticStates.walk;
+						player2.player.kState.startTime = Time.time;
+						if(player2.player.aniState != AniState.Windup){
+							player2.player.aniState = AniState.Walking;
+						}
+					}
 				}
 				player2.lastLeftKeyPress = Time.time;
-			}
-			if (Input.GetKeyUp("left") && !singlePlayer) {
-				player2.player.kState.state = KineticStates.walk;
-				if(player2.player.aniState != AniState.Windup){
-					player2.player.aniState = AniState.Walking;
-				}
 			}
 			// right
 			if(Input.GetKeyDown("right") && !singlePlayer) {
@@ -271,14 +307,16 @@ public class GameEngine : MonoBehaviour {
 					if(player2.player.aniState != AniState.Windup){
 						player2.player.aniState = AniState.Running;
 					}
+				} else if (player2.player.kState.state == KineticStates.run) {
+					if (player2.player.vel.x < 0f) {
+						player2.player.kState.state = KineticStates.walk;
+						player2.player.kState.startTime = Time.time;
+						if(player2.player.aniState != AniState.Windup){
+							player2.player.aniState = AniState.Walking;
+						}
+					}
 				}
 				player2.lastRightKeyPress = Time.time;
-			}
-			if (Input.GetKeyUp("right") && !singlePlayer) {
-				player2.player.kState.state = KineticStates.walk;
-				if(player2.player.aniState != AniState.Windup){
-					player2.player.aniState = AniState.Walking;
-				}
 			}
 		}
 		
@@ -328,9 +366,7 @@ public class GameEngine : MonoBehaviour {
 		}
 		
 		foreach (Player player in team1) {
-			if ((player.transform.position.x > -0.193f ||
-			     sideline.isBeyondLeft(player.transform.position))
-			    && player.fieldPosition == 1) {
+			if (sideline.isBeyondLeft(player.transform.position) && player.fieldPosition == 1) {
 				player.goneOverboard = true;
 			} else if(!player.playerAI.inReturnMode) {
 				player.goneOverboard = false;
@@ -338,22 +374,32 @@ public class GameEngine : MonoBehaviour {
 		}
 		
 		foreach (Player player in team2) {
-			if ((player.transform.position.x < 0.193f ||
-			     sideline.isBeyondRight(player.transform.position))
-			    && player.fieldPosition == 1) {
+			if (sideline.isBeyondRight(player.transform.position) && player.fieldPosition == 1) {
 				player.goneOverboard = true;
 			} else if(!player.playerAI.inReturnMode) {
 				player.goneOverboard = false;
 			}
 		}
+
+		HandleOverRun(player1);
+		HandleOverRun(player2);
 	}
 	
 	// Update is called once per frame
 	void FixedUpdate () {
 		if (!customLevel) {
 			HandleClassicBehaviour();
+			if (player1.player.kState.state == KineticStates.run) {
+				player1.player.Movement(0f, player1.y);
+			}
+			if (player2.player.kState.state == KineticStates.run) {
+				player2.player.Movement(0f, player2.y);
+			}
 		} else {
 			CustomBehaviour();
+			if (player1.player.kState.state == KineticStates.run) {
+				player1.player.Movement(0f, player1.y);
+			}
 		}
 	}
 	
@@ -361,7 +407,6 @@ public class GameEngine : MonoBehaviour {
 		if (player1.player == null) {
 			player1.ChangeControlTo(team1[0]);
 		}
-		
 		if (player1.player.goneOverboard) {
 			player1.player.playerAI.returnBehindBoundary();
 		} else {
@@ -373,6 +418,12 @@ public class GameEngine : MonoBehaviour {
 				// Pickup or pass
 				if(player1.player.kState.state != KineticStates.fall){
 					player1.player.Crouch();
+				}
+
+				if (player1.player.jumpWindupB) {
+					player1.player.Jump (player1.h);
+				} else if(player1.player.jumpWindupA == false){
+					StartCoroutine(player1.player.JumpDelay('A'));
 				}
 			} else if (player1.b) {
 				// Pickup or throw
@@ -409,7 +460,13 @@ public class GameEngine : MonoBehaviour {
 						player1.player.PickupBall();
 					}
 				}
-			} else {
+
+				if (player1.player.jumpWindupA) {
+					player1.player.Jump (player1.h);
+				} else if(player1.player.jumpWindupB == false){
+					StartCoroutine(player1.player.JumpDelay('B'));
+				}
+			} else if (player1.player.kState.state != KineticStates.run) {
 				player1.player.Movement(player1.h, player1.y);
 			}
 		}
@@ -484,6 +541,12 @@ public class GameEngine : MonoBehaviour {
 						player1.player.Crouch();
 					}
 				} 
+
+				if (player1.player.jumpWindupB) {
+					player1.player.Jump (player1.h);
+				} else if(player1.player.jumpWindupA == false){
+					StartCoroutine(player1.player.JumpDelay('A'));
+				}
 			} else if (player1.b) {
 				// Pickup or throw
 				if (player1.player.aState.state == ActionStates.holding) {
@@ -511,7 +574,13 @@ public class GameEngine : MonoBehaviour {
 						player1.player.PickupBall();
 					}
 				}
-			} else {
+
+				if (player1.player.jumpWindupA) {
+					player1.player.Jump (player1.h);
+				} else if(player1.player.jumpWindupB == false){
+					StartCoroutine(player1.player.JumpDelay('B'));
+				}
+			} else if (player1.player.kState.state != KineticStates.run){
 				player1.player.Movement(player1.h, player1.y);
 			}
 		}
@@ -574,6 +643,12 @@ public class GameEngine : MonoBehaviour {
 						player2.player.Crouch();
 					}
 				}
+
+				if (player2.player.jumpWindupB) {
+					player2.player.Jump (player1.h);
+				} else if(player2.player.jumpWindupA == false){
+					StartCoroutine(player2.player.JumpDelay('A'));
+				}
 			} else if (player2.b) {
 				// Pickup or throw
 				if (player2.player.aState.state == ActionStates.holding) {
@@ -601,7 +676,13 @@ public class GameEngine : MonoBehaviour {
 						player2.player.PickupBall();
 					}
 				}
-			} else {
+				
+				if (player2.player.jumpWindupA) {
+					player2.player.Jump (player1.h);
+				} else if(player2.player.jumpWindupB == false){
+					StartCoroutine(player2.player.JumpDelay('B'));
+				}
+			} else if (player2.player.kState.state != KineticStates.run) {
 				player2.player.Movement(player2.h, player2.y);
 			}
 		}
