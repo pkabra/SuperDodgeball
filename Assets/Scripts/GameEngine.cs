@@ -524,7 +524,7 @@ public class GameEngine : MonoBehaviour {
 		if (player1.player == null) {
 			player1.ChangeControlTo(team1[0]);
 		}
-		
+
 		if (player1.player.goneOverboard) {
 			player1.player.playerAI.returnBehindBoundary();
 		} else {

@@ -21,12 +21,16 @@ public class AIHandler : MonoBehaviour {
 	void FixedUpdate () {
 		if (!player.AIControl) return;
 		if (GameEngine.ballsack.Count == 0) return;
-		
-		if (player.fieldPosition == 1) {
-			if (player.team == 2 && GameEngine.limitTeam2AI) return;
-			HandleInfieldPlayer();
+
+		if (player.goneOverboard) {
+			returnBehindBoundary();
 		} else {
-			HandleSidelinePlayer();
+			if (player.fieldPosition == 1) {
+				if (player.team == 2 && GameEngine.limitTeam2AI) return;
+				HandleInfieldPlayer();
+			} else {
+				HandleSidelinePlayer();
+			}
 		}
 	}
 	
