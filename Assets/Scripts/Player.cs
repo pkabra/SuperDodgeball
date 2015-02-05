@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 
-public enum KineticStates{none, stand, walk, run, crouch, jump ,runjump, fall, stun};
+public enum KineticStates{none, stand, walk, run, crouch, jump ,runjump, fall, stun, laying};
 public enum ActionStates{none, throwing, catching, passing, holding};
 public enum PlayerFacing{northEast, east, southEast, southWest, west, northWest};
 public enum AniState{Standing, StandingNorth, StandingSouth, Walking, Running,
@@ -68,7 +68,7 @@ public class Player : MonoBehaviour {
 	private bool            yLock = false;
 	public bool             noBallHit = false;
 	private bool            dead = false;
-	private bool            noInput = false;
+	public bool            noInput = false;
 	
 	public KenState			kenState = KenState.idle; 
 	
@@ -346,7 +346,9 @@ public class Player : MonoBehaviour {
 			//print()
 			yield return null;
 		}
-		StartCoroutine( AttemptCatch() );
+		if(!noInput){
+			StartCoroutine( AttemptCatch() );
+		}
 	}
 	
 	public IEnumerator TempNoCollide(float secs){
@@ -380,6 +382,9 @@ public class Player : MonoBehaviour {
 	public void PlayerHit(Ball other) {
 		kState.state = KineticStates.fall;
 		aState.state = ActionStates.none;
+		aniState = AniState.Falling;
+		noBallHit = true;
+		noInput = true;
 		
 		float damage = Mathf.Ceil(Random.value * 8);
 		if (other.state == BallState.superpowered) {
@@ -400,21 +405,19 @@ public class Player : MonoBehaviour {
 		// Just take the velocity the ball was moving in and multiply by 3
 		// We know the ball velocity will be constant
 		// Will need to add a clause for power shots
-		vel = other.vel * 3;
+		if(other.state == BallState.powered){
+			vel = other.vel * 4f;
+		} else {
+			vel = other.vel * 3f;
+		}
+
+
 		
 		// Added height for bounce off of a player
 		heightVel = 10f;
 	}
 	
 	void FixedUpdate() {
-		Quaternion rot = transform.rotation;
-		if (facing == PlayerFacing.east || facing == PlayerFacing.northEast || facing == PlayerFacing.southEast) {
-			rot.y = 0f;
-		} else {
-			rot.y = 180f;
-		}
-		transform.rotation = rot;
-		
 		if (this.kState.state == KineticStates.fall) {
 			PlayerFallLogic();
 			this.transform.position += vel * Time.fixedDeltaTime;
@@ -488,14 +491,31 @@ public class Player : MonoBehaviour {
 		} else { 
 			animator.SetInteger(aniStateID, (int)aniState); 
 		} 
-		
+
+		// This is a collision with the edge of the screen
+		// The player should bounce off this edge
+		Quaternion rot = transform.rotation;
 		if(fieldPosition == 1){
 			if(transform.position.x < -12.25f){
 				transform.position = new Vector3(-12.25f, transform.position.y, -1f);
+				vel = new Vector3(vel.x * -1f, 0f, 0f) * 0.3f;
+				if((int)facing < 3) facing = PlayerFacing.west;
+				else facing = PlayerFacing.east;
 			} else if(transform.position.x > 12.25f){
 				transform.position = new Vector3(12.25f, transform.position.y, -1f);
+				vel = new Vector3(vel.x * -1f, 0f, 0f) * 0.3f;
+				heightVel += 5.0f;
+				if((int)facing < 3) facing = PlayerFacing.west;
+				else facing = PlayerFacing.east;
 			}
 		}
+
+		if (facing == PlayerFacing.east || facing == PlayerFacing.northEast || facing == PlayerFacing.southEast) {
+			rot.y = 0f;
+		} else {
+			rot.y = 180f;
+		}
+		transform.rotation = rot;
 		
 		myAstate = aState.state;
 		myKState = kState.state;
@@ -581,13 +601,13 @@ public class Player : MonoBehaviour {
 	
 	void PlayerFallLogic() {
 		if(height < 0.05f && (heightVel < 0.1f && heightVel > -0.1f)){
-			kState.state = KineticStates.walk;
+			kState.state = KineticStates.laying;
+			aniState = AniState.Laying;
+			noBallHit = false;
 			goAround = false;
 			height = 0f;
 			heightVel = 0f;
-			if(dead){
-				PlayerKilled();
-			}
+			StartCoroutine(LayingLogic ());
 		} else {
 			heightVel += GameEngine.gravity;
 			height += heightVel * Time.fixedDeltaTime;
@@ -602,6 +622,20 @@ public class Player : MonoBehaviour {
 		if(vel.magnitude < 0.05f){
 			vel = Vector3.zero;
 		}
+	}
+
+	IEnumerator LayingLogic() {
+		float endTime = Time.time + 1.2f;
+		while(Time.time < endTime){
+			yield return null;
+		}
+		noInput = false; // restore input capability
+		if(dead){
+			PlayerKilled();
+		}
+		kState.state = KineticStates.stand;
+		aState.state = ActionStates.none;
+		aniState = AniState.Standing;
 	}
 	
 	void InfieldCollideLogic(Collider other){
