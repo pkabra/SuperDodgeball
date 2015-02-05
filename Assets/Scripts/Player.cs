@@ -66,6 +66,7 @@ public class Player : MonoBehaviour {
 	private bool            yLock = false;
 	public bool             noBallHit = false;
 	private bool            dead = false;
+	private bool            noInput = false;
 	
 	public KenState			kenState = KenState.idle; 
 	
@@ -112,6 +113,7 @@ public class Player : MonoBehaviour {
 		// Player just threw the ball
 		aState.state = ActionStates.throwing;
 		aniState = AniState.Throwing;
+		noInput = true;
 		StartCoroutine(resetAStateNone(0.5f));
 	}
 	
@@ -245,20 +247,21 @@ public class Player : MonoBehaviour {
 	}
 	
 	public void PickupBall() {
+		if(noInput) return;
 		if (kState.state != KineticStates.walk && kState.state != KineticStates.run) return; 
 		Ball theBall = GameEngine.GetClosestBall(transform.position);
 		if(theBall == null){
 			Crouch ();
+			return;
 		}
-		
+
 		float heightDifference = theBall.height - this.height; 
 		float delta = Vector3.Distance(transform.position, theBall.transform.position);
-		
 		if (delta < 0.5f && ((heightDifference <= heightHitbox) && heightDifference >= 0f)) {
-			theBall.StateHeld (this);
+			StartCoroutine(DelayBallPickUp(theBall));
+		} else {
+			Crouch();
 		}
-		
-		Crouch();
 	}
 	
 	public void Crouch() {
@@ -361,6 +364,7 @@ public class Player : MonoBehaviour {
 		while(Time.time < endTime){
 			yield return null;
 		}
+		noInput = false;
 		if(this != null){
 			this.aState.state = ActionStates.none;
 			this.aniState = AniState.Standing;
@@ -499,7 +503,7 @@ public class Player : MonoBehaviour {
 			} else if (h < 0f) {
 				jumpVelX = -0.1f;
 			}
-			jumpVelY = 30f;
+			jumpVelY = 35f;
 			print ("running jump!");
 		} else {
 			kState.state = KineticStates.jump;
@@ -516,22 +520,33 @@ public class Player : MonoBehaviour {
 	}
 	
 	void JumpLogic() {
+		print ("jumping!");
+		print (height);
+		jumpVelY += GameEngine.gravity*3;
+		height += jumpVelY * Time.fixedDeltaTime;
+
 		if (height < 0f) {
 			print ("done with jump.");
 			kState.state = KineticStates.walk;
 			jumpVelX = 0f;
 			jumpVelY = 0f;
 			height = 0f;
-		} else {
-			print ("jumping!");
-			print (height);
-			jumpVelY += GameEngine.gravity*3;
-			height += jumpVelY * Time.fixedDeltaTime;
-			
-			Vector3 pos = transform.position;
-			pos.x += jumpVelX;
-			transform.position = pos;
 		}
+			
+		Vector3 pos = transform.position;
+		pos.x += jumpVelX;
+		transform.position = pos;
+	}
+
+	IEnumerator RunJumpLand(){
+		float endTime = Time.time + 0.15f;
+		kState.state = KineticStates.crouch;
+		aniState = AniState.Crouching;
+		while(Time.time < endTime){
+			yield return null;
+		}
+		kState.state = KineticStates.stand;
+		aniState = AniState.Standing;
 	}
 	
 	void PlayerFallLogic() {
@@ -888,6 +903,7 @@ public class Player : MonoBehaviour {
 	}
 	
 	public IEnumerator WindUpThrow(Vector3 target){
+		if(noInput) yield break;
 		float endTime = Time.time + 0.12f;
 		this.aniState = AniState.Windup;
 		windupThr = true;
@@ -903,6 +919,7 @@ public class Player : MonoBehaviour {
 	}
 	
 	public IEnumerator WindUpPass(){
+		if(noInput) yield break;
 		float endTime = Time.time + 0.12f;
 		this.aniState = AniState.Windup;
 		windupPass = true;
@@ -915,6 +932,17 @@ public class Player : MonoBehaviour {
 			heldBall.PassTo(GameEngine.passTarget);
 			StartCoroutine(resetAStateNone(0.5f));
 		}
+	}
+
+	IEnumerator DelayBallPickUp(Ball b){
+		aniState = AniState.Crouching;
+		kState.state = KineticStates.crouch;
+		kState.startTime = Time.time;
+		while (Time.time - kState.startTime <= 0.25f) {
+			yield return null;
+		}
+		b.StateHeld (this);
+		StandUp();
 	}
 	
 	void PlayerKilled(){

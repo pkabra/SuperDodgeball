@@ -58,7 +58,7 @@ public class GameEngine : MonoBehaviour {
 	public static Player        team2pos3;
 	public static Player        team2pos4;
 	
-	public static float			gravity = -0.9f;
+	public static float			gravity = -0.7f;
 	
 	public static bool			resetBallOn = false;
 	public bool                 shieldsEnabled = false;
@@ -478,7 +478,7 @@ public class GameEngine : MonoBehaviour {
 						player1.player.PickupBall();
 					}
 				} else if(player1.player.kState.state != KineticStates.fall){
-					if (tempBall.state == BallState.rest || tempBall.state == BallState.free) {
+					if (tempBall.state == BallState.rest) {
 						player1.player.PickupBall();
 					} else {
 						player1.player.Crouch();
@@ -505,7 +505,7 @@ public class GameEngine : MonoBehaviour {
 					}
 				} else {
 					// Pickup
-					if (tempBall.state != BallState.rest && tempBall.state != BallState.free) {
+					if (tempBall.state != BallState.rest) {
 						player1.player.AttemptCatchAtTime(Time.time);
 					} else {
 						player1.player.PickupBall();
@@ -568,7 +568,7 @@ public class GameEngine : MonoBehaviour {
 						player2.player.PickupBall();
 					}
 				} else if(player1.player.kState.state != KineticStates.fall){
-					if (tempBall.state == BallState.rest || tempBall.state == BallState.free) {
+					if (tempBall.state == BallState.rest) {
 						player2.player.PickupBall();
 					} else {
 						player2.player.Crouch();
@@ -595,7 +595,7 @@ public class GameEngine : MonoBehaviour {
 					}
 				} else {
 					// Pickup
-					if (tempBall.state != BallState.rest && tempBall.state != BallState.free) {
+					if (tempBall.state != BallState.rest) {
 						player2.player.AttemptCatchAtTime(Time.time);
 					} else {
 						player2.player.PickupBall();

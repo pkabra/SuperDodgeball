@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 public class ComputerOpponent : MonoBehaviour {
 	
-	class PlayerDecision {
+	public class PlayerDecision {
 		public Player 	player;
 		public bool 	hasTarget = false;
 		public Vector3	target = Vector3.zero;
@@ -17,9 +17,9 @@ public class ComputerOpponent : MonoBehaviour {
 		}
 	}
 	
-	GameEngine.Controller 	control = GameEngine.player2;
-	PlayerDecision			controlDecision;
-	List<PlayerDecision>	team;
+	public GameEngine.Controller 	control = GameEngine.player2;
+	public PlayerDecision			controlDecision;
+	public List<PlayerDecision>		team;
 	
 	// Use this for initialization
 	void Start () {
@@ -29,10 +29,15 @@ public class ComputerOpponent : MonoBehaviour {
 	void FixedUpdate() {
 		if (team.Count < 3) AddPlayersToTeam();
 		foreach (PlayerDecision p in team) {
-			if (p.hasTarget) {
+			if (p.hasTarget && controlDecision != p) {
 				MoveToTarget(p);
 			}
 		}
+		
+		control.h = 0f;
+		control.y = 0f;
+		control.a = false;
+		control.b = false;
 		
 		// What to do with the rest of the team
 		MoveToGeneralLocation();
@@ -51,7 +56,6 @@ public class ComputerOpponent : MonoBehaviour {
 	void Update () {
 		foreach(PlayerDecision p in team) {
 			if (p.player.GetInstanceID() == control.player.GetInstanceID()) {
-				p.hasTarget = false;
 				controlDecision = p;
 			}
 		}
@@ -70,7 +74,8 @@ public class ComputerOpponent : MonoBehaviour {
 	}
 	
 	void MoveToTarget(PlayerDecision p) {
-		if (p.player.kState.state != KineticStates.walk || p.player.kState.state != KineticStates.run) return;
+		if (p.player.kState.state != KineticStates.walk && p.player.kState.state != KineticStates.run) return;
+		
 		float h = 0f;
 		float v = 0f;
 		if (p.player.transform.position.x + 0.4f < p.target.x) {
@@ -113,20 +118,20 @@ public class ComputerOpponent : MonoBehaviour {
 		} else if (ball.state == BallState.held && ball.holder.team == 2) {
 			PlanAndThrow();
 		} else if (ball.state == BallState.thrown && ball.throwerTeam == 1) {
-			bool catchIt = Random.value < 0.7f;
+			bool catchIt = Random.value < 0.3f;
 			if (distance < 1f && catchIt) {
-				control.a = true;
+				control.b = true;
 			}
 		} else if (ball.state == BallState.powered) {
-			bool catchIt = Random.value < 0.2f;
+			bool catchIt = Random.value < 0.05f;
 			if (distance < 1f && catchIt) {
-				control.a = true;
+				control.b = true;
 			}
 		} else if (ball.state == BallState.free || ball.state == BallState.rest) {
-			if (distance <= 0.5f) {
-				control.b = true;
-			} else {
-				if (ball.transform.position.x > -0.01f) {
+			if (ball.transform.position.x > -0.15f) {
+				if (distance <= 0.4f) {
+					control.b = true;
+				} else {
 					float h = 0f;
 					float v = 0f;
 					if (ball.transform.position.x - control.player.transform.position.x < -0.3f) {
@@ -144,19 +149,45 @@ public class ComputerOpponent : MonoBehaviour {
 					control.h = h;
 					control.y = v;
 				}
+			} else if(!controlDecision.hasTarget) {
+				controlDecision.target.y = -2.7f + (Random.value * 2.4f);
+				controlDecision.target.x = 4f + (Random.value * 4f);
+				controlDecision.hasTarget = true;
+				controlDecision.lastTargetSetTime = Time.time;
+			} else {
+				control.h = 0f;
+				control.y = 0f;
+				if (control.player.transform.position.x + 0.4f < controlDecision.target.x) {
+					control.h = 1f;
+				} else if (control.player.transform.position.x - 0.4f > controlDecision.target.x) {
+					control.h = -1f;
+				}
+				
+				if (control.player.transform.position.y + 0.4f < controlDecision.target.y) {
+					control.y = 1f;
+				} else if (control.player.transform.position.y - 0.4f > controlDecision.target.y) {
+					control.y = -1f;
+				}
+				
+				if (control.h == 0f && control.y == 0f) {
+					controlDecision.hasTarget = false;
+				}
 			}
 		}
 	}
 	
 	void PlanAndThrow() {
 		if (controlDecision.initThrow) {
-			float distance = Vector3.Distance(controlDecision.target, control.player.transform.position);
+			float distance = Mathf.Abs(control.player.transform.position.x);
 			if ((control.player.kState.state == KineticStates.run && distance < 2f) ||
 			    (control.player.kState.state == KineticStates.walk && distance < 1f)) {
 				control.b = true;
 				control.a = false;
 				control.h = 0f;
 				controlDecision.initThrow = false;
+				if (control.player.kState.state == KineticStates.run) {
+					control.player.kState.state = KineticStates.walk;
+				}
 			} else {
 				control.h = -1f;
 			}
@@ -165,7 +196,7 @@ public class ComputerOpponent : MonoBehaviour {
 		
 		controlDecision.initThrow = true;
 		controlDecision.target = control.player.transform.position;
-		controlDecision.target.x = 0.2f;
+		controlDecision.target.x = 0.3f;
 		if (control.player.transform.position.x > 4f) {
 			control.player.kState.state = KineticStates.run;
 		}
