@@ -261,7 +261,7 @@ public class Player : MonoBehaviour {
 
 		float heightDifference = theBall.height - this.height; 
 		float delta = Vector3.Distance(transform.position, theBall.transform.position);
-		if (delta < 0.5f && ((heightDifference <= heightHitbox) && heightDifference >= 0f)) {
+		if (delta < 0.8f && ((heightDifference <= heightHitbox) && heightDifference >= 0f)) {
 			theBall.StateHeld(this);
 		} 
 		
@@ -306,8 +306,8 @@ public class Player : MonoBehaviour {
 		} else if(kState.state == KineticStates.walk){
 			heldBall.state = BallState.thrown;
 		} else if (kState.state == KineticStates.runjump) {
-			print ("running jump throw!");
-			print (jumpVelY);
+//			print ("running jump throw!");
+//			print (jumpVelY);
 			if (jumpVelY < 5f && jumpVelY > -5f) {
 				heldBall.state = BallState.superpowered;
 				heldBall.mode = JumpAbility;
@@ -329,7 +329,6 @@ public class Player : MonoBehaviour {
 		aState.state = ActionStates.catching;
 		aniState = AniState.Catching;
 		animator.SetInteger(aniStateID, (int)aniState);
-		print (aniState);
 		while(Time.time < endTime){
 			yield return null;
 		}
@@ -506,7 +505,7 @@ public class Player : MonoBehaviour {
 		jumpWindupA = false;
 		jumpWindupB = false;
 		
-		if ((int)kState.state > 3) return;
+		if ((int)kState.state > 4) return;
 		if (height > 0f) return;
 		
 		aniState = AniState.Jumping;

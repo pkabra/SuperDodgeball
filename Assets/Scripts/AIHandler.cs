@@ -94,7 +94,9 @@ public class AIHandler : MonoBehaviour {
 					player.PickupBall();
 				}
 			} else if (GameEngine.sideline.isBeyondRight(ball.transform.position)
-			           && player.fieldPosition == 4) {
+			           && player.fieldPosition == 4 &&
+			           !(GameEngine.sideline.isBeyondBottom(ball.transform.position) ||
+			  			GameEngine.sideline.isBeyondTop(ball.transform.position))) {
 				distance = ball.transform.position.y - player.transform.position.y;
 				if (distance < -0.2f) {
 					player.Movement(0f, -1f);
@@ -126,7 +128,9 @@ public class AIHandler : MonoBehaviour {
 					player.PickupBall();
 				}
 			} else if (GameEngine.sideline.isBeyondLeft(ball.transform.position)
-			           && player.fieldPosition == 4) {
+			           && player.fieldPosition == 4 &&
+			           !(GameEngine.sideline.isBeyondBottom(ball.transform.position) ||
+			  			GameEngine.sideline.isBeyondTop(ball.transform.position))) {
 				distance = ball.transform.position.y - player.transform.position.y;
 				if (distance < -0.2f) {
 					player.Movement(0f, -1f);

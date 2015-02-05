@@ -551,7 +551,7 @@ public class Ball : MonoBehaviour {
 		}else {
 			// Do nothing
 		}
-		print (breakerMode);
+//		print (breakerMode);
 	}
 	
 	public float getThrowSpeed(){

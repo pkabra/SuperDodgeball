@@ -20,7 +20,7 @@ public class ComputerOpponent : MonoBehaviour {
 	public GameEngine.Controller 	control = GameEngine.player2;
 	public PlayerDecision			controlDecision;
 	public List<PlayerDecision>		team;
-	
+
 	// Use this for initialization
 	void Start () {
 		team = new List<PlayerDecision> ();
@@ -135,7 +135,7 @@ public class ComputerOpponent : MonoBehaviour {
 			}
 		} else if (ball.state == BallState.free || ball.state == BallState.rest) {
 			if (ball.transform.position.x > -0.15f) {
-				if (distance <= 0.4f) {
+				if (distance <= 0.3f) {
 					control.b = true;
 				} else {
 					float h = 0f;

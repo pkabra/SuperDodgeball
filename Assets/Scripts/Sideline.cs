@@ -18,9 +18,9 @@ public class Sideline : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
 
-		this.pointOnLeft.x = -10.71f;
+		this.pointOnLeft.x = -10.31f;
 		this.pointOnLeft.y = -3.02f;
-		this.pointOnRight.x = 10.71f;
+		this.pointOnRight.x = 10.31f;
 		this.pointOnRight.y = -3.02f;
 			
 		this.slopeLeft = (boundaryNW.transform.position.y - boundarySW.transform.position.y) / 
