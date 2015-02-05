@@ -20,7 +20,10 @@ public class ComputerOpponent : MonoBehaviour {
 	public GameEngine.Controller 	control = GameEngine.player2;
 	public PlayerDecision			controlDecision;
 	public List<PlayerDecision>		team;
-
+	
+	public bool                     sidelineWait = false;
+	private float                   sidelineWaitUntil = 0.0f;
+	
 	// Use this for initialization
 	void Start () {
 		team = new List<PlayerDecision> ();
@@ -66,7 +69,7 @@ public class ComputerOpponent : MonoBehaviour {
 			if (p.player.GetInstanceID() == control.player.GetInstanceID()) continue;
 			if (!p.hasTarget && Time.time - p.lastTargetSetTime > 4f) {
 				p.target.y = -2.7f + (Random.value * 2.4f);
-				p.target.x = 4f + (Random.value * 4f);
+				p.target.x = 2.6f + (Random.value * 5.4f);
 				p.hasTarget = true;
 				p.lastTargetSetTime = Time.time;
 			}
@@ -104,7 +107,7 @@ public class ComputerOpponent : MonoBehaviour {
 				controlDecision = p;
 			}
 		}
-
+		
 		Ball ball = GameEngine.ballsack[0];
 		
 		if (control.player.fieldPosition != 1) {
@@ -211,6 +214,11 @@ public class ComputerOpponent : MonoBehaviour {
 	}
 	
 	void ControlSidelinePlayer() {
-		control.a = true;
+		if(!sidelineWait){
+			sidelineWaitUntil = Time.time + 0.4f;
+			control.a = true;
+		} else if (Time.time >= sidelineWaitUntil){
+			sidelineWait = false;
+		}
 	}
 }

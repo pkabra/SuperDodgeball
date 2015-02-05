@@ -125,7 +125,8 @@ public class Player : MonoBehaviour {
 		if(GameEngine.customStatic && team == 2) return;
 		
 		if(other.gameObject.tag == "InfieldBoundary"){
-			if((kState.state == KineticStates.walk || kState.state == KineticStates.run) && !goneOverboard)
+			if((kState.state == KineticStates.walk || kState.state == KineticStates.run) && !goneOverboard
+			   && fieldPosition == 1)
 			{
 				InfieldCollideLogic(other);
 			}
@@ -143,6 +144,9 @@ public class Player : MonoBehaviour {
 	
 	// Handle Player Movement
 	public void Movement (float h, float v) {
+		if (kState.state == KineticStates.stand) {
+			kState.state = KineticStates.walk;
+		}
 		if (kState.state != KineticStates.walk && kState.state != KineticStates.run) return;
 		if (aState.state == ActionStates.catching) return;
 		
@@ -173,8 +177,8 @@ public class Player : MonoBehaviour {
 				vel.x = runDir * 6f;
 				vel.y = v * 1f;
 			} else {
-				vel.x = h * 2f;
-				vel.y = v * 2f;
+				vel.x = h * 3f;
+				vel.y = v * 3f;
 			}
 		}
 		
@@ -238,6 +242,15 @@ public class Player : MonoBehaviour {
 				}
 			}
 		} else {
+			if (transform.position.y > 0.15f && v > 0f) {
+				vel.y = 0f;
+				vel.x = 0f;
+				return;
+			}else if(transform.position.y < -3.2f && v < 0f) {
+				vel.y = 0f;
+				vel.x = 0f;
+				return;
+			}
 			float slope = GameEngine.sideline.slopeRight;
 			if (team == 2) {
 				slope = GameEngine.sideline.slopeLeft;

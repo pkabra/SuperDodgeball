@@ -212,6 +212,7 @@ public class GameEngine : MonoBehaviour {
 		
 		foreach (Player player in team1) {
 			if (sideline.isBeyondLeft(player.transform.position) && player.fieldPosition == 1) {
+				print ("player overboard!");
 				player.goneOverboard = true;
 			} else if(!player.playerAI.inReturnMode) {
 				player.goneOverboard = false;
@@ -222,6 +223,7 @@ public class GameEngine : MonoBehaviour {
 	}
 
 	void HandleOverRun(Controller p) {
+		if (p.player.fieldPosition != 1) return;
 		if ((p.player.team == 1 && p.player.transform.position.x > -0.1f) ||
 		    (p.player.team == 2 && p.player.transform.position.x < 0.1f)) {
 			if (p.player.kState.state == KineticStates.run) {
@@ -229,6 +231,7 @@ public class GameEngine : MonoBehaviour {
 					p.player.aniState == AniState.Throwing ||
 				    p.player.aniState == AniState.JumpThrowing ||
 				    p.player.aniState == AniState.Passing) {
+					print ("player overboard in overrun!");
 					p.player.goneOverboard = true;
 				} else {
 					player1.player.kState.state = KineticStates.walk;
@@ -241,6 +244,7 @@ public class GameEngine : MonoBehaviour {
 					}
 				}
 			} else if (p.player.kState.state == KineticStates.walk) {
+				print ("player overboard in run 2");
 				p.player.goneOverboard = true;
 			}
 		}
@@ -617,13 +621,19 @@ public class GameEngine : MonoBehaviour {
 		
 		player1.a = false;
 		player1.b = false;
-		
+
+		if (player2.b || player2.a) {
+			print (player2.b);
+			print (player2.a);
+		}
+
 		//// Handle Player 2
 		if (player2.player == null) {
 			player2.ChangeControlTo(team2[0]);
 		}
 		
 		if (player2.player.goneOverboard) {
+			print ("player has goneoverboard! returning him!");
 			player2.player.playerAI.returnBehindBoundary();
 		} else {
 			bool held2 = false;
@@ -719,6 +729,10 @@ public class GameEngine : MonoBehaviour {
 		
 		player2.a = false;
 		player2.b = false;
+		if (customLevel) {
+			player2.h = 0f;
+			player2.y = 0f;
+		}
 	}
 	
 	public static void ChangeControl(string tag) {
