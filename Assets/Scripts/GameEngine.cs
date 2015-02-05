@@ -70,6 +70,9 @@ public class GameEngine : MonoBehaviour {
 	
 	public bool					customLevel = false; 
 	public static bool			customStatic = false; 
+
+	public static bool			gibsonMode = false;
+	public Text					gibsonModeSign;
 	
 	// Use this for initialization
 	void Awake () {
@@ -97,6 +100,36 @@ public class GameEngine : MonoBehaviour {
 		} else {
 			CustomControls();
 		}
+		Cheats ();
+	}
+
+	void Cheats() {
+		if(Input.GetKeyDown(KeyCode.H)){
+			foreach(Player p in team1) {
+				p.hp = 48;
+			}
+		}
+
+		if (Input.GetKeyDown(KeyCode.G)) {
+			gibsonMode = !gibsonMode;
+			if (gibsonMode) {
+				gibsonModeSign.text = "G";
+			} else {
+				gibsonModeSign.text = "";
+			}
+		}
+
+		if (customLevel) {
+			if (Input.GetKeyDown(KeyCode.T)) {
+				player1.player.shieldEarned();
+			}
+		}
+
+		if (!customLevel) {
+			if (Input.GetKeyDown(KeyCode.R)) {
+				ballsack[0].ResetBall();
+			}
+		}
 	}
 	
 	void CustomControls() {
@@ -104,9 +137,6 @@ public class GameEngine : MonoBehaviour {
 		if (player1.player == null) {
 			if (team1.Count == 0) return;
 			player1.ChangeControlTo(team1[0]);
-		}
-		if(Input.GetKeyDown(KeyCode.G)){
-			player1.player.shieldEarned();
 		}
 		
 		//// Player 1 double tap detection

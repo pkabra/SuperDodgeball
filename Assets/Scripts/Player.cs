@@ -296,7 +296,7 @@ public class Player : MonoBehaviour {
 	
 	public float ThrowAt(Vector3 targetPos){
 		if(kState.state == KineticStates.run){
-			if((Time.time - kState.startTime) > 0.7f && (Time.time - kState.startTime) < 1.8f){
+			if(GameEngine.gibsonMode || ((Time.time - kState.startTime) > 0.4f && (Time.time - kState.startTime) < 1.6f)){
 				heldBall.state = BallState.powered;
 				heldBall.mode = GroundAbility;
 				heldBall.animator.SetInteger(aniStateID, (int)GroundAbility);
@@ -308,7 +308,7 @@ public class Player : MonoBehaviour {
 		} else if (kState.state == KineticStates.runjump) {
 //			print ("running jump throw!");
 //			print (jumpVelY);
-			if (jumpVelY < 5f && jumpVelY > -5f) {
+			if (GameEngine.gibsonMode || (jumpVelY < 5f && jumpVelY > -5f)) {
 				heldBall.state = BallState.superpowered;
 				heldBall.mode = JumpAbility;
 				heldBall.animator.SetInteger(aniStateID, (int)JumpAbility);
@@ -392,8 +392,10 @@ public class Player : MonoBehaviour {
 		} else if (other.state == BallState.powered) {
 			damage += 10f;
 		}
-		
-		hp -= damage >= hp ? hp : damage;
+
+		if (!GameEngine.gibsonMode || team == 2) {
+			hp -= damage >= hp ? hp : damage;
+		}
 		
 		hpGui.UpdateCover(hp);
 		

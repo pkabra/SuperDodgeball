@@ -23,40 +23,98 @@ public class Ken : MonoBehaviour {
 	public RuntimeAnimatorController   hadoukenAnimator;
 	
 	public float kenStateChangeTime = 0f;
+
+	public bool autoFire = true;
+	int shotQueued = 0;
 	
 	// Use this for initialization
 	void Start () {
 		player = gameObject.GetComponent<Player>();
+	}
+
+	void Update() {
+		if (Input.GetKeyDown (KeyCode.K)) {
+			autoFire = !autoFire;
+		}
+
+		if (!autoFire) {
+			if (Input.GetKeyDown(KeyCode.Alpha1)) {
+				shotQueued = 1;
+			}
+			if (Input.GetKeyDown(KeyCode.Alpha2)) {
+				shotQueued = 2;
+			}
+			if (Input.GetKeyDown(KeyCode.Alpha3)) {
+				shotQueued = 3;
+			}
+			if (Input.GetKeyDown(KeyCode.Alpha4)) {
+				shotQueued = 4;
+			}
+			if (Input.GetKeyDown(KeyCode.Alpha5)) {
+				shotQueued = 5;
+			}
+			if (Input.GetKeyDown(KeyCode.Alpha6)) {
+				shotQueued = 6;
+			}
+			if (Input.GetKeyDown(KeyCode.Alpha7)) {
+				shotQueued = 7;
+			}
+		}
 	}
 	
 	void FixedUpdate() {
 		if (hasTarget) {
 			Move ();
 		} else {
-			if (player.kenState == KenState.idle && framesSinceLastChange > 20) {
-				// Don't fire 20% of the time
-				int rand = Random.Range(0, 13);
-				if (rand < 11) {
+			int waitFrames = Random.Range (25, 50);
+			if (player.kenState == KenState.idle) {
+					if (framesSinceLastChange > waitFrames && autoFire) {
+					// Don't fire 20% of the time
+					int rand = Random.Range(0, 13);
+					if (rand < 11) {
+						KenState mode = KenState.righty;
+						switch (rand) {
+						case 0: mode = KenState.hadouken;
+							break;
+						case 2: mode = KenState.uppercut;
+							break;
+						case 4: mode = KenState.highkick;
+							break;
+						case 6: mode = KenState.forwardhigh;
+							break;
+						case 8: mode = KenState.spinkick;
+							break;
+						default: mode = KenState.righty;
+							break;
+						}
+						if (mode == KenState.righty) {
+							mode = Random.Range(0, 2) == 0 ? KenState.righty : KenState.medkick;
+						}
+						framesTillAniEnd = kenAnimationFrames[(int)mode];
+						framesSinceLastChange = 0;
+						Fire (mode);
+					}
+				} else if (shotQueued != 0) {
 					KenState mode = KenState.righty;
-					switch (rand) {
-					case 0: mode = KenState.hadouken;
+					switch (shotQueued) {
+					case 3: mode = KenState.hadouken;
 						break;
-					case 2: mode = KenState.uppercut;
+					case 4: mode = KenState.uppercut;
 						break;
-					case 4: mode = KenState.highkick;
+					case 5: mode = KenState.highkick;
 						break;
 					case 6: mode = KenState.forwardhigh;
 						break;
-					case 8: mode = KenState.spinkick;
+					case 7: mode = KenState.spinkick;
+						break;
+					case 2: mode = KenState.medkick;
 						break;
 					default: mode = KenState.righty;
 						break;
 					}
-					if (mode == KenState.righty) {
-						mode = Random.Range(0, 2) == 0 ? KenState.righty : KenState.medkick;
-					}
 					framesTillAniEnd = kenAnimationFrames[(int)mode];
 					framesSinceLastChange = 0;
+					shotQueued = 0;
 					Fire (mode);
 				}
 			}

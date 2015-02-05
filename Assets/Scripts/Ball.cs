@@ -593,7 +593,10 @@ public class Ball : MonoBehaviour {
 		return speed;
 	}
 	
-	void ResetBall(){
+	public void ResetBall(){
+		if (holder) {
+			holder.DropBall();
+		}
 		this.transform.position = new Vector3(0f, -1f, -1f);
 	}
 	

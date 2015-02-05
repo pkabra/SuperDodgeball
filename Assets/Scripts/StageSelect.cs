@@ -17,9 +17,9 @@ public class StageSelect : MonoBehaviour {
 	
 	// Use this for initialization
 	void Start () {
-		stagePos[0] = 168;
-		stagePos[1] = 138;
-		stagePos[2] = 106;
+		stagePos[0] = 200;
+		stagePos[1] = 170;
+		stagePos[2] = 138;
 	}
 	
 	// Update is called once per frame
