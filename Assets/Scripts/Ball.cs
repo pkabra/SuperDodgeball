@@ -419,7 +419,7 @@ public class Ball : MonoBehaviour {
 		
 		int othersLayer = other.gameObject.layer; 
 		Player pOther = other.GetComponent<Player>(); // maybe null if the 'other' is not a player
-		
+
 		// Special cases for when player not to be hit by ball
 		if(pOther && pOther.noBallHit){
 			return;

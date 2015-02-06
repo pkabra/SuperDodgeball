@@ -136,7 +136,7 @@ public class Ken : MonoBehaviour {
 	void DestroyTheBalls() {
 		List<Ball> ballsToDelete = new List<Ball>();
 		foreach (Ball b in GameEngine.ballsack) {
-			if (b.state == BallState.rest || b.transform.position.x < -9.65) {
+			if (b.state == BallState.rest || b.transform.position.x < -14.65) {
 				ballsToDelete.Add(b);
 			}
 		}

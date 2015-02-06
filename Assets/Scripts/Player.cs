@@ -290,6 +290,15 @@ public class Player : MonoBehaviour {
 		aniState = AniState.Crouching;
 		kState.startTime = Time.time;
 		heightHitbox = 0.5f;
+		StartCoroutine(DelayHitboxReset(0.35f));
+	}
+
+	IEnumerator DelayHitboxReset(float time_in){
+		float endTime = Time.time + time_in;
+		while(Time.time < endTime){
+			yield return null;
+		}
+		heightHitbox = 3.0f;
 	}
 	
 	public void StandUp() {
@@ -432,7 +441,7 @@ public class Player : MonoBehaviour {
 			vel = other.vel * 3f;
 		}
 
-		if(other.mode == PowerMode.fastball){
+		if(other.mode == PowerMode.fastball &&  other.trajectory == Trajectory.jump){
 			goAround = true;
 		}
 		
@@ -466,6 +475,14 @@ public class Player : MonoBehaviour {
 		if (this.aState.state == ActionStates.holding) {
 			if(this.team == 1){
 				PassTargetingLogicTeam1();
+		
+			
+			
+			
+			
+			
+			
+			
 			} else {
 				PassTargetingLogicTeam2();
 			}
@@ -1088,7 +1105,8 @@ public class Player : MonoBehaviour {
 		aniState = AniState.Crouching;
 		kState.state = KineticStates.crouch;
 		kState.startTime = Time.time;
-		while (Time.time - kState.startTime <= 0.25f) {
+		float endTime = Time.time + 0.25f;
+		while (Time.time <= endTime) {
 			yield return null;
 		}
 		b.StateHeld (this);
