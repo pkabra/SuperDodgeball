@@ -36,7 +36,7 @@ public class StageSelect : MonoBehaviour {
 			}
 		}
 		
-		if (!select) {
+		if (select) {
 			if (Input.GetKeyDown(KeyCode.W)) {
 				StageSelectUp();
 			} else if (Input.GetKeyDown(KeyCode.S)) {
