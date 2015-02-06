@@ -137,8 +137,8 @@ public class ComputerOpponent : MonoBehaviour {
 				control.b = true;
 			}
 		} else if (ball.state == BallState.free || ball.state == BallState.rest) {
-			if (ball.transform.position.x > -0.15f) {
-				if (distance <= 0.3f) {
+			if (ball.transform.position.x > -0.15f && !GameEngine.sideline.isBeyondAny(ball.transform.position)) {
+				if (distance <= 0.5f) {
 					control.b = true;
 				} else {
 					float h = 0f;
@@ -193,10 +193,7 @@ public class ComputerOpponent : MonoBehaviour {
 				control.b = true;
 				control.a = false;
 				control.h = 0f;
-				controlDecision.initThrow = false;
-				if (control.player.kState.state == KineticStates.run) {
-					control.player.kState.state = KineticStates.walk;
-				}
+				StartCoroutine(runExtra ());
 			} else {
 				control.h = -1f;
 			}
@@ -208,9 +205,20 @@ public class ComputerOpponent : MonoBehaviour {
 		controlDecision.target.x = 0.3f;
 		if (control.player.transform.position.x > 4f) {
 			control.player.kState.state = KineticStates.run;
+			control.player.kState.startTime = Time.time;
 			control.player.runDir = -1;
 		}
 		control.h = -1f;
+	}
+
+	IEnumerator runExtra() {
+		Ball b = GameEngine.ballsack[0];
+		while (b.state != BallState.thrown) {
+			yield return null;
+		}
+		controlDecision.player.kState.state = KineticStates.walk;
+		controlDecision.player.kState.startTime = Time.time;
+		controlDecision.initThrow = false;
 	}
 	
 	void ControlSidelinePlayer() {

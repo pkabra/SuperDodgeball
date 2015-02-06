@@ -138,16 +138,18 @@ public class GameEngine : MonoBehaviour {
 			if (team1.Count == 0) return;
 			player1.ChangeControlTo(team1[0]);
 		}
-		
+
 		//// Player 1 double tap detection
 		// left
-		if (player1.player.kState.state == KineticStates.walk || player1.player.kState.state == KineticStates.run) {
+		if (player1.player.kState.state == KineticStates.walk || player1.player.kState.state == KineticStates.run
+		    && player1.player.fieldPosition == 1) {
 			if(Input.GetKeyDown("a") || (Input.GetKeyDown(KeyCode.LeftArrow) && singlePlayer)) {
 				if (myLocalTime - player1.lastLeftKeyPress < 0.2f) {
 					if(player1.player.kState.state != KineticStates.run){
 						player1.player.kState.startTime = myLocalTime;
 					}
 					player1.player.kState.state = KineticStates.run;
+					player1.player.runDir = -1;
 					if(player1.player.aniState != AniState.Windup){
 						player1.player.aniState = AniState.Running;
 					}
@@ -169,21 +171,23 @@ public class GameEngine : MonoBehaviour {
 						player1.player.kState.startTime = myLocalTime;
 					}
 					player1.player.kState.state = KineticStates.run;
+					player1.player.runDir = 1;
 					if(player1.player.aniState != AniState.Windup){
 						player1.player.aniState = AniState.Running;
 					}
-				}
-				player1.lastRightKeyPress = Time.time;
-			} else if (player1.player.kState.state == KineticStates.run) {
-				if (player1.player.vel.x < 0f) {
-					player1.player.kState.state = KineticStates.walk;
-					player1.player.kState.startTime = Time.time;
-					if(player1.player.aniState != AniState.Windup){
-						player1.player.aniState = AniState.Walking;
+				} else if (player1.player.kState.state == KineticStates.run) {
+					if (player1.player.vel.x < 0f) {
+						player1.player.kState.state = KineticStates.walk;
+						player1.player.kState.startTime = Time.time;
+						if(player1.player.aniState != AniState.Windup){
+							player1.player.aniState = AniState.Walking;
+						}
 					}
 				}
+				player1.lastRightKeyPress = Time.time;
 			}
 		}
+
 		//Controls
 		player1.h = Input.GetAxisRaw("Horizontal");
 		player1.y = Input.GetAxisRaw("Vertical");
@@ -212,7 +216,6 @@ public class GameEngine : MonoBehaviour {
 		
 		foreach (Player player in team1) {
 			if (sideline.isBeyondLeft(player.transform.position) && player.fieldPosition == 1) {
-				print ("player overboard!");
 				player.goneOverboard = true;
 			} else if(!player.playerAI.inReturnMode) {
 				player.goneOverboard = false;
@@ -231,7 +234,6 @@ public class GameEngine : MonoBehaviour {
 					p.player.aniState == AniState.Throwing ||
 				    p.player.aniState == AniState.JumpThrowing ||
 				    p.player.aniState == AniState.Passing) {
-					print ("player overboard in overrun!");
 					p.player.goneOverboard = true;
 				} else {
 					player1.player.kState.state = KineticStates.walk;
@@ -244,7 +246,6 @@ public class GameEngine : MonoBehaviour {
 					}
 				}
 			} else if (p.player.kState.state == KineticStates.walk) {
-				print ("player overboard in run 2");
 				p.player.goneOverboard = true;
 			}
 		}
@@ -262,7 +263,8 @@ public class GameEngine : MonoBehaviour {
 		
 		//// Player 1 double tap detection
 		// left
-		if (player1.player.kState.state == KineticStates.walk || player1.player.kState.state == KineticStates.run) {
+		if (player1.player.kState.state == KineticStates.walk || player1.player.kState.state == KineticStates.run
+		    && player1.player.fieldPosition == 1) {
 			if(Input.GetKeyDown("a") || (Input.GetKeyDown(KeyCode.LeftArrow) && singlePlayer)) {
 				if (myLocalTime - player1.lastLeftKeyPress < 0.2f) {
 					if(player1.player.kState.state != KineticStates.run){
@@ -310,7 +312,8 @@ public class GameEngine : MonoBehaviour {
 		
 		//// Player 2 double tap detection
 		// left
-		if (player2.player.kState.state == KineticStates.walk || player2.player.kState.state == KineticStates.run) {
+		if (player2.player.kState.state == KineticStates.walk || player2.player.kState.state == KineticStates.run
+		    && player2.player.fieldPosition == 1) {
 			if(Input.GetKeyDown("left") && !singlePlayer) {
 				if (Time.time - player2.lastLeftKeyPress < 0.2f) {
 					if(player2.player.kState.state != KineticStates.run){
@@ -622,18 +625,12 @@ public class GameEngine : MonoBehaviour {
 		player1.a = false;
 		player1.b = false;
 
-		if (player2.b || player2.a) {
-			print (player2.b);
-			print (player2.a);
-		}
-
 		//// Handle Player 2
 		if (player2.player == null) {
 			player2.ChangeControlTo(team2[0]);
 		}
 		
 		if (player2.player.goneOverboard) {
-			print ("player has goneoverboard! returning him!");
 			player2.player.playerAI.returnBehindBoundary();
 		} else {
 			bool held2 = false;

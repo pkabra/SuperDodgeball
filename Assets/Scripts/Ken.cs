@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 
-public enum KenState {idle, lefty, righty, power, spinkick, uppercut, highkick, forwardhigh, hadouken, medkick}; 
+public enum KenState {idle, lefty, righty, power, spinkick, uppercut, highkick, forwardhigh, hadouken, medkick, fall, lay, recover}; 
 
 public class Ken : MonoBehaviour {
 	
@@ -23,7 +23,7 @@ public class Ken : MonoBehaviour {
 	public RuntimeAnimatorController   hadoukenAnimator;
 	
 	public float kenStateChangeTime = 0f;
-
+	
 	public bool autoFire = true;
 	int shotQueued = 0;
 	
@@ -31,12 +31,12 @@ public class Ken : MonoBehaviour {
 	void Start () {
 		player = gameObject.GetComponent<Player>();
 	}
-
+	
 	void Update() {
 		if (Input.GetKeyDown (KeyCode.K)) {
 			autoFire = !autoFire;
 		}
-
+		
 		if (!autoFire) {
 			if (Input.GetKeyDown(KeyCode.Alpha1)) {
 				shotQueued = 1;
@@ -63,12 +63,13 @@ public class Ken : MonoBehaviour {
 	}
 	
 	void FixedUpdate() {
+		if((int)player.kenState > 9) return;
 		if (hasTarget) {
 			Move ();
 		} else {
 			int waitFrames = Random.Range (25, 50);
 			if (player.kenState == KenState.idle) {
-					if (framesSinceLastChange > waitFrames && autoFire) {
+				if (framesSinceLastChange > waitFrames && autoFire) {
 					// Don't fire 20% of the time
 					int rand = Random.Range(0, 13);
 					if (rand < 11) {
@@ -264,7 +265,11 @@ public class Ken : MonoBehaviour {
 		// Throw the ball and set ball state
 		player.ThrowAt(shotTarget);
 		b.ThrowToPos(shotTarget, 1f);
-		b.state = BallState.powered;
+		if (mode_in == PowerMode.none) {
+			b.state = BallState.thrown;			
+		} else {
+			b.state = BallState.powered;
+		}
 		b.height = 1.5f;
 		b.mode = mode_in;
 		

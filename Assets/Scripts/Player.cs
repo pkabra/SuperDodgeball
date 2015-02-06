@@ -49,6 +49,8 @@ public class Player : MonoBehaviour {
 	public bool             windupPass = false;
 	public bool            	jumpWindupA = false;
 	public bool            	jumpWindupB = false;
+	private bool            kenRecovered = false;
+	private Vector3         kenNewPos = Vector3.zero;
 	
 	public float            jumpVelX = 0f;
 	public float            jumpVelY = 0f;
@@ -69,6 +71,7 @@ public class Player : MonoBehaviour {
 	public bool             noBallHit = false;
 	private bool            dead = false;
 	public bool            noInput = false;
+	bool				firstFrame = true;
 	
 	public KenState			kenState = KenState.idle; 
 	
@@ -233,12 +236,12 @@ public class Player : MonoBehaviour {
 		if (fieldPosition < 4) {
 			vel.x = h * 2f;
 			if (team == 1) {
-				if (pos.x > 9f || pos.x < 0f) {
-					vel.x = 0f;
+				if (pos.x > 11.7f || pos.x < 0f) {
+					vel.x = -3f;
 				}
 			} else {
-				if (pos.x < -9f || pos.x > 0f) {
-					vel.x = 0f;
+				if (pos.x < -11.7f || pos.x > 0f) {
+					vel.x = 3f;
 				}
 			}
 		} else {
@@ -399,6 +402,10 @@ public class Player : MonoBehaviour {
 		noBallHit = true;
 		noInput = true;
 		
+		if(GameEngine.customStatic && team == 2){
+			kenState = KenState.fall;
+		}
+
 		float damage = Mathf.Ceil(Random.value * 8);
 		if (other.state == BallState.superpowered) {
 			damage += 14f;
@@ -433,6 +440,11 @@ public class Player : MonoBehaviour {
 	}
 	
 	void FixedUpdate() {
+		if (firstFrame && hpGui) {
+			hpGui.UpdateCover(hp);
+			firstFrame = false;
+		}
+
 		if (this.kState.state == KineticStates.fall) {
 			PlayerFallLogic();
 			this.transform.position += vel * Time.fixedDeltaTime;
@@ -502,7 +514,13 @@ public class Player : MonoBehaviour {
 		Vector3 heightOffset = new Vector3( 0, height * 0.5f + 1.2f, newZ);
 		spriteHolderTrans.localPosition = heightOffset;
 		if (GameEngine.customStatic && team == 2) { 
-			animator.SetInteger(aniStateID, (int)kenState); 
+			animator.SetInteger(aniStateID, (int)kenState);
+			if(kenRecovered){
+				kenRecovered = false;
+				transform.position = kenNewPos;
+				kenState = KenState.idle;
+				animator.SetInteger(aniStateID, (int)kenState);
+			}
 		} else { 
 			animator.SetInteger(aniStateID, (int)aniState); 
 		} 
@@ -618,6 +636,10 @@ public class Player : MonoBehaviour {
 		if(height < 0.05f && (heightVel < 0.1f && heightVel > -0.1f)){
 			kState.state = KineticStates.laying;
 			aniState = AniState.Laying;
+			if(GameEngine.customStatic && team == 2){
+				kenState = KenState.lay;
+			}
+
 			noBallHit = false;
 			goAround = false;
 			height = 0f;
@@ -648,9 +670,33 @@ public class Player : MonoBehaviour {
 		if(dead){
 			PlayerKilled();
 		}
+		if(GameEngine.customStatic && team == 2){
+			StartCoroutine(KenRecover());
+		}else {
+			kState.state = KineticStates.stand;
+			aState.state = ActionStates.none;
+			aniState = AniState.Standing;
+		}
+	}
+	
+	IEnumerator KenRecover(){
+		float endTime = Time.time + 0.9f;
+		kenState = KenState.recover;
+		while(Time.time < endTime){
+			yield return null;
+		}
+		Vector3 newPos = transform.position;
+		if((int)facing < 3){
+			newPos.x -= 1.8f;
+		} else {
+			newPos.x += 1.8f;
+		}
+		
+		kenRecovered = true;
 		kState.state = KineticStates.stand;
 		aState.state = ActionStates.none;
 		aniState = AniState.Standing;
+		kenNewPos = newPos;
 	}
 	
 	void InfieldCollideLogic(Collider other){
@@ -1004,7 +1050,6 @@ public class Player : MonoBehaviour {
 			yield return null;
 		}
 		if(this.aniState == AniState.Windup){
-			print ("holla");
 			this.aniState = AniState.Throwing;
 			float speed = ThrowAt(target);
 			heldBall.newThrowToPos(target, speed);
@@ -1020,7 +1065,6 @@ public class Player : MonoBehaviour {
 			yield return null;
 		}
 		if(this.aniState == AniState.Windup){
-			print ("passing");
 			this.aniState = AniState.Passing;
 			heldBall.PassTo(GameEngine.passTarget);
 			StartCoroutine(resetAStateNone(0.5f));

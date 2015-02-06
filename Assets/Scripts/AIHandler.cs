@@ -7,7 +7,10 @@ public class AIHandler : MonoBehaviour {
 	
 	public float leftEdge = -7.5f;
 	public float rightEdge = 7.3f;
-	
+
+	public Vector3 target = Vector2.zero;
+	public bool hasTarget = false;
+
 	public bool inReturnMode = false;
 	bool returnFromSide = false;
 	int extraSteps = 20;
@@ -37,37 +40,69 @@ public class AIHandler : MonoBehaviour {
 	void HandleInfieldPlayer() {
 		Ball tempBall = GameEngine.ballsack[0];
 		// Handle tactics for infield players
-		if (tempBall.holder && tempBall.holder.team != player.team) {
-			// Run away!
-			float runPos = 0f;
+		// Run away!
+		float runPosX = 0f;
+		float runPosY = 0f;
+		if (player.team == 1) {
+			if (tempBall.holder && tempBall.holder.fieldPosition == 4) {
+				runPosX = leftEdge + 2f;
+			} else {
+				runPosX = leftEdge;
+			}
+		} else {
+			if (tempBall.holder && tempBall.holder.fieldPosition == 4) {
+				runPosX = rightEdge - 2f;
+			} else {
+				runPosX = rightEdge;
+			}
+		}
+
+		if (tempBall.holder && tempBall.holder.fieldPosition == 3) {
+			runPosY = 0f;
+		} else {
+			runPosY = -3f;
+		}
+		Move(runPosX, runPosY);
+	}
+
+	void Move(float runPosX, float runPosY) {
+		if (hasTarget) {
 			float h = 0f;
 			float v = 0f;
-			if (player.team == 1) {
-				if (tempBall.holder.fieldPosition == 4) {
-					runPos = leftEdge + 2f;
-				} else {
-					runPos = leftEdge;
-				}
-				
-				if (player.transform.position.x > runPos) {
-					player.Movement(-1f, 0f);
-				} else {
-					player.FaceBall();
-				}
-			} else {
-				if (tempBall.holder.fieldPosition == 4) {
-					runPos = rightEdge - 2f;
-				} else {
-					runPos = rightEdge;
-				}
-				
-				if (player.transform.position.x < runPos) {
-					player.Movement(1f, 0f);
-				} else {
-					player.FaceBall();
-				}
+			if (player.transform.position.x > target.x + 0.3f) {
+				h = -1f;
+			} else if (player.transform.position.x < target.x - 0.3f) {
+				h = 1f;
 			}
+
+			if (player.transform.position.y > target.y + 0.3f) {
+				v = -1f;
+			} else if (player.transform.position.y < target.y - 0.3f) {
+				v = 1f;
+			}
+
+			if (h == 0f && v == 0f) {
+				player.FaceBall();
+				hasTarget = false;
+			}
+
 			player.Movement(h, v);
+		} else {
+			if (runPosX < 0f) {
+				target.x = runPosX + (Random.value * 4f);
+			} else {
+				target.x = runPosX - (Random.value * 4f);
+			}
+
+			if (runPosY > -1.5f) {
+				target.y = runPosY - (Random.value * 2f);
+			} else {
+				target.y = runPosY + (Random.value * 2f);
+			}
+
+			if (Random.Range(0, 40) == 0) {
+				hasTarget = true;
+			}
 		}
 	}
 	
@@ -77,7 +112,7 @@ public class AIHandler : MonoBehaviour {
 		float distance = ball.transform.position.x - player.transform.position.x;
 		//print (GameEngine.sideline.isBeyondAny(ball.transform.position));
 		if (player.team == 1) {
-			if (GameEngine.sideline.isBeyondBottom(ball.transform.position)
+			if (ball.transform.position.y < -3.1f
 			    && ball.transform.position.x > 0f
 			    && player.fieldPosition == 3) {
 				if (distance < -0.2f) {
@@ -87,7 +122,7 @@ public class AIHandler : MonoBehaviour {
 				} else {
 					player.PickupBall();
 				}
-			} else if (GameEngine.sideline.isBeyondTop(ball.transform.position)
+			} else if (ball.transform.position.y > 0.5f
 			           && ball.transform.position.x > 0f
 			           && player.fieldPosition == 2) {
 				if (distance < -0.2f) {
@@ -99,8 +134,8 @@ public class AIHandler : MonoBehaviour {
 				}
 			} else if (GameEngine.sideline.isBeyondRight(ball.transform.position)
 			           && player.fieldPosition == 4 &&
-			           !(GameEngine.sideline.isBeyondBottom(ball.transform.position) ||
-			  GameEngine.sideline.isBeyondTop(ball.transform.position))) {
+			           !(ball.transform.position.y < -3.1f ||
+			  	ball.transform.position.y > 0.5f)) {
 				distance = ball.transform.position.y - player.transform.position.y;
 				if (distance < -0.2f) {
 					player.Movement(0f, -1f);
@@ -111,7 +146,7 @@ public class AIHandler : MonoBehaviour {
 				}
 			}
 		} else {
-			if (GameEngine.sideline.isBeyondBottom(ball.transform.position)
+			if (ball.transform.position.y < -3.1f
 			    && ball.transform.position.x < 0f
 			    && player.fieldPosition == 3) {
 				if (distance < -0.2f) {
@@ -121,7 +156,7 @@ public class AIHandler : MonoBehaviour {
 				} else {
 					player.PickupBall();
 				}
-			} else if (GameEngine.sideline.isBeyondTop(ball.transform.position)
+			} else if (ball.transform.position.y > 0.5f
 			           && ball.transform.position.x < 0f
 			           && player.fieldPosition == 2) {
 				if (distance < -0.2f) {
@@ -133,8 +168,8 @@ public class AIHandler : MonoBehaviour {
 				}
 			} else if (GameEngine.sideline.isBeyondLeft(ball.transform.position)
 			           && player.fieldPosition == 4 &&
-			           !(GameEngine.sideline.isBeyondBottom(ball.transform.position) ||
-			  GameEngine.sideline.isBeyondTop(ball.transform.position))) {
+			           !(ball.transform.position.y < -3.1f ||
+			  	ball.transform.position.y > 0.5f)) {
 				distance = ball.transform.position.y - player.transform.position.y;
 				if (distance < -0.2f) {
 					player.Movement(0f, -1f);
@@ -145,6 +180,7 @@ public class AIHandler : MonoBehaviour {
 				}
 			}
 		}
+		if (Random.Range(0, 20) == 0) player.FaceBall();
 	}
 	
 	public void returnBehindBoundary() {
