@@ -236,10 +236,10 @@ public class GameEngine : MonoBehaviour {
 				    p.player.aniState == AniState.Passing) {
 					p.player.goneOverboard = true;
 				} else {
-					player1.player.kState.state = KineticStates.walk;
-					player1.player.kState.startTime = Time.time;
-					if(player1.player.aniState != AniState.Windup){
-						player1.player.aniState = AniState.Walking;
+					p.player.kState.state = KineticStates.walk;
+					p.player.kState.startTime = Time.time;
+					if(p.player.aniState != AniState.Windup){
+						p.player.aniState = AniState.Walking;
 					}
 					if (p.player.heldBall) {
 						p.player.DropBall();
@@ -265,7 +265,7 @@ public class GameEngine : MonoBehaviour {
 		// left
 		if (player1.player.kState.state == KineticStates.walk || player1.player.kState.state == KineticStates.run
 		    && player1.player.fieldPosition == 1) {
-			if(Input.GetKeyDown("a") || (Input.GetKeyDown(KeyCode.LeftArrow) && singlePlayer)) {
+			if(Input.GetKeyDown("a") || singlePlayer && (Input.GetKeyDown(KeyCode.LeftArrow))) {
 				if (myLocalTime - player1.lastLeftKeyPress < 0.2f) {
 					if(player1.player.kState.state != KineticStates.run){
 						player1.player.kState.startTime = myLocalTime;
@@ -287,7 +287,7 @@ public class GameEngine : MonoBehaviour {
 				player1.lastLeftKeyPress = myLocalTime;
 			}
 			// right
-			if(Input.GetKeyDown("d") || (Input.GetKeyDown(KeyCode.RightArrow) && singlePlayer)) {
+			if(Input.GetKeyDown("d") || singlePlayer && (Input.GetKeyDown(KeyCode.RightArrow))) {
 				if (Time.time - player1.lastRightKeyPress < 0.2f) {
 					if(player1.player.kState.state != KineticStates.run){
 						player1.player.kState.startTime = myLocalTime;
@@ -320,6 +320,7 @@ public class GameEngine : MonoBehaviour {
 						player2.player.kState.startTime = Time.time;
 					}
 					player2.player.kState.state = KineticStates.run;
+					player2.player.runDir = -1;
 					if(player2.player.aniState != AniState.Windup){
 						player2.player.aniState = AniState.Running;
 					}
@@ -341,6 +342,7 @@ public class GameEngine : MonoBehaviour {
 						player2.player.kState.startTime = Time.time;
 					}
 					player2.player.kState.state = KineticStates.run;
+					player2.player.runDir = 1;
 					if(player2.player.aniState != AniState.Windup){
 						player2.player.aniState = AniState.Running;
 					}
@@ -572,6 +574,8 @@ public class GameEngine : MonoBehaviour {
 						player1.player.PickupBall();
 					}
 				} else if(player1.player.kState.state != KineticStates.fall){
+					player1.player.AttemptCatchAtTime(Time.time);
+				} else if(player1.player.kState.state != KineticStates.fall){
 					if (tempBall.state == BallState.rest) {
 						player1.player.PickupBall();
 					} else {
@@ -673,7 +677,9 @@ public class GameEngine : MonoBehaviour {
 						player2.player.aState.state = ActionStates.none;
 						player2.player.PickupBall();
 					}
-				} else if(player1.player.kState.state != KineticStates.fall){
+				} else if(player2.player.kState.state != KineticStates.fall){
+					player2.player.AttemptCatchAtTime(Time.time);
+				} else if(player2.player.kState.state != KineticStates.fall){
 					if (tempBall.state == BallState.rest) {
 						player2.player.PickupBall();
 					} else {

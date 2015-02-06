@@ -3,7 +3,7 @@ using System.Collections;
 
 public class HPUpdaterGUI : MonoBehaviour {
 	public GameObject child = null;
-	private RectTransform cover;
+	public RectTransform cover;
 
 	void Start () {
 		cover = child.GetComponentInChildren<RectTransform>();

@@ -147,11 +147,11 @@ public class Player : MonoBehaviour {
 	
 	// Handle Player Movement
 	public void Movement (float h, float v) {
-		if (kState.state == KineticStates.stand) {
+		if (kState.state == KineticStates.stand && aState.state != ActionStates.catching) {
 			kState.state = KineticStates.walk;
 		}
 		if (kState.state != KineticStates.walk && kState.state != KineticStates.run) return;
-		if (aState.state == ActionStates.catching) return;
+		//if (aState.state == ActionStates.catching) return;
 		
 		lastH = h;
 		lastV = v;
@@ -311,8 +311,9 @@ public class Player : MonoBehaviour {
 	}
 	
 	public float ThrowAt(Vector3 targetPos){
+		if(GameEngine.customStatic && team == 2) return heldBall.getThrowSpeed();
 		if(kState.state == KineticStates.run){
-			if(GameEngine.gibsonMode || ((Time.time - kState.startTime) > 0.4f && (Time.time - kState.startTime) < 1.6f)){
+			if(GameEngine.gibsonMode || ((Time.time - kState.startTime) > 0.65f && (Time.time - kState.startTime) < 1.6f)){
 				heldBall.state = BallState.powered;
 				heldBall.mode = GroundAbility;
 				heldBall.animator.SetInteger(aniStateID, (int)GroundAbility);
@@ -342,6 +343,9 @@ public class Player : MonoBehaviour {
 	IEnumerator AttemptCatch(){
 		float endTime = Time.time + catchingTime;
 		//print ("hands up");
+		if(kState.state == KineticStates.walk){
+			kState.state = KineticStates.stand;
+		}
 		aState.state = ActionStates.catching;
 		aniState = AniState.Catching;
 		animator.SetInteger(aniStateID, (int)aniState);
@@ -419,11 +423,6 @@ public class Player : MonoBehaviour {
 		
 		hpGui.UpdateCover(hp);
 		
-		if (hp <= 0f) {
-			dead = true;
-			return;
-		}
-		
 		// Just take the velocity the ball was moving in and multiply by 3
 		// We know the ball velocity will be constant
 		// Will need to add a clause for power shots
@@ -433,10 +432,17 @@ public class Player : MonoBehaviour {
 			vel = other.vel * 3f;
 		}
 
-
+		if(other.mode == PowerMode.fastball){
+			goAround = true;
+		}
 		
 		// Added height for bounce off of a player
 		heightVel = 10f;
+
+		if (hp <= 0f) {
+			dead = true;
+			return;
+		}
 	}
 	
 	void FixedUpdate() {
@@ -549,6 +555,10 @@ public class Player : MonoBehaviour {
 			rot.y = 180f;
 		}
 		transform.rotation = rot;
+
+		if(kState.state != KineticStates.jump && kState.state != KineticStates.runjump && kState.state != KineticStates.fall){
+			height = 0.0f;
+		}
 		
 		myAstate = aState.state;
 		myKState = kState.state;
@@ -1054,6 +1064,8 @@ public class Player : MonoBehaviour {
 			float speed = ThrowAt(target);
 			heldBall.newThrowToPos(target, speed);
 		}
+		windupThr = false;
+
 	}
 	
 	public IEnumerator WindUpPass(){
@@ -1069,6 +1081,7 @@ public class Player : MonoBehaviour {
 			heldBall.PassTo(GameEngine.passTarget);
 			StartCoroutine(resetAStateNone(0.5f));
 		}
+		windupPass = false;
 	}
 
 	IEnumerator DelayBallPickUp(Ball b){
@@ -1083,7 +1096,7 @@ public class Player : MonoBehaviour {
 	}
 	
 	void PlayerKilled(){
-		Vector3 angelSpot = transform.position;
+		Vector3 angelSpot = transform.position / transform.lossyScale.x;
 		angelSpot.y += 1f;
 		angelSpot.z = -2f;
 		GameObject soul = Instantiate(GameEngine.angelPrefab, angelSpot, transform.rotation) as GameObject;

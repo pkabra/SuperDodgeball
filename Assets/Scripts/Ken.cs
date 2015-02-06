@@ -69,21 +69,22 @@ public class Ken : MonoBehaviour {
 		} else {
 			int waitFrames = Random.Range (25, 50);
 			if (player.kenState == KenState.idle) {
-				if (framesSinceLastChange > waitFrames && autoFire) {
-					// Don't fire 20% of the time
-					int rand = Random.Range(0, 13);
-					if (rand < 11) {
+				if (framesSinceLastChange > waitFrames && autoFire && GameEngine.team1[0].kState.state != KineticStates.fall
+				    && !GameEngine.team1[0].goneOverboard && GameEngine.team1[0].kState.state != KineticStates.laying) {
+					// Don't fire 22% of the time
+					int rand = Random.Range(0, 9);
+					if (rand < 8) {
 						KenState mode = KenState.righty;
 						switch (rand) {
 						case 0: mode = KenState.hadouken;
 							break;
 						case 2: mode = KenState.uppercut;
 							break;
-						case 4: mode = KenState.highkick;
+						case 3: mode = KenState.highkick;
 							break;
-						case 6: mode = KenState.forwardhigh;
+						case 4: mode = KenState.forwardhigh;
 							break;
-						case 8: mode = KenState.spinkick;
+						case 5: mode = KenState.spinkick;
 							break;
 						default: mode = KenState.righty;
 							break;
@@ -261,25 +262,31 @@ public class Ken : MonoBehaviour {
 		
 		Ball b = makeBallAtPos(StartPos);
 		player.heldBall = b;
-		
-		// Throw the ball and set ball state
-		player.ThrowAt(shotTarget);
-		b.ThrowToPos(shotTarget, 1f);
+		b.mode = mode_in;
+
+		print (mode_in);
+
 		if (mode_in == PowerMode.none) {
 			b.state = BallState.thrown;			
 		} else {
 			b.state = BallState.powered;
 		}
+		// Throw the ball and set ball state
+		float speed = player.ThrowAt(shotTarget);
+		print (speed);
+		if(mode_in == PowerMode.breaker) shotTarget = GameEngine.team1[0].transform.position;
+		b.ThrowToPos(shotTarget, speed);
 		b.height = 1.5f;
-		b.mode = mode_in;
-		
+
 		if(mode_in == PowerMode.breaker ){
+
 			// Allow first several frames of animation to execute
 			while(framesSinceLastChange < throwFrame + 8){
 				yield return null;
 			}
 			Ball c = makeBallAtPos(StartPos);
 			player.heldBall = c;
+			shotTarget = GameEngine.team1[0].transform.position;
 			
 			// Throw the ball and set ball state
 			player.ThrowAt(shotTarget);
@@ -294,19 +301,22 @@ public class Ken : MonoBehaviour {
 			}
 			Ball d = makeBallAtPos(StartPos);
 			player.heldBall = d;
-			
+
+			shotTarget = GameEngine.team1[0].transform.position;
 			// Throw the ball and set ball state
 			player.ThrowAt(shotTarget);
 			d.ThrowToPos(shotTarget, 1f);
 			d.state = BallState.powered;
 			d.height = 1.5f;
 			d.mode = mode_in;
+	
 		}
 	}
 	
 	Ball makeBallAtPos(Vector3 pos){
 		GameObject a = Instantiate(ballPrefab, pos, transform.rotation) as GameObject;
 		Ball b = a.GetComponent<Ball>();
+		b.throwerTeam = 2;
 		GameEngine.ballsack.Add(b);
 		return b;
 	}
